@@ -9,13 +9,12 @@
 // ring only appear inside the window.
 //
 // v2 additions: the footage only shows inside an elliptical window on the front of
-// the mesh (like the BF6 capsule, where the sides stay plain glass/metal). The window
+// the mesh (like a glass capsule, where the sides stay plain glass/metal). The window
 // is fixed to the object (MaskForward/MaskUp, object space), independent of the
 // camera-aimed lens, and has offset, stretch, rotation, softness, a glass edge ring,
 // and separate base color / smoothness outside the window.
 //
-// Recreates the "footage living inside a glass capsule" look from the BF6 intro
-// (~0:24-0:27): the video sits on a virtual plane *behind* the glass surface,
+// Recreates a "footage living inside a glass capsule" look: the video sits on a virtual plane *behind* the glass surface,
 // is seen through a refracting lens (fisheye at the rim), gets chromatic
 // fringing toward the edges, a dark vignette, a bright fresnel rim, and a
 // subtle projector flicker / grain.
@@ -28,17 +27,17 @@
 //                            centered on LensCenter; VideoRenderTextureBinder can aim it
 //                            at the camera every frame.
 // ----------------------------------------------------------------------------
-#ifndef BF6_VIDEO_LENS3_INCLUDED
-#define BF6_VIDEO_LENS3_INCLUDED
+#ifndef VTT_VIDEO_LENS3_INCLUDED
+#define VTT_VIDEO_LENS3_INCLUDED
 
-float BF6v3_Hash12(float2 p)
+float VTTv3_Hash12(float2 p)
 {
     float3 p3 = frac(float3(p.xyx) * 0.1031);
     p3 += dot(p3, p3.yzx + 33.33);
     return frac((p3.x + p3.y) * p3.z);
 }
 
-float BF6v3_InverseExposure()
+float VTTv3_InverseExposure()
 {
 #if defined(SHADERGRAPH_PREVIEW)
     return 1.0;
@@ -47,7 +46,7 @@ float BF6v3_InverseExposure()
 #endif
 }
 
-float3 BF6v3_SampleVideo(UnityTexture2D tex, float2 uv, float2 caDir)
+float3 VTTv3_SampleVideo(UnityTexture2D tex, float2 uv, float2 caDir)
 {
     // LOD 0: video RTs have no mips, and this avoids derivative seams from the
     // per-pixel UV jumps that parallax / refraction introduce.
@@ -161,7 +160,7 @@ void VideoLens3_float(
     // Chromatic aberration grows toward the rim.
     float  rad = length(centered) * 2.0;
     float2 caDir = centered * ChromaticAberration * (0.5 + rad * rad);
-    float3 video = BF6v3_SampleVideo(VideoTex, saturate(videoUV), caDir);
+    float3 video = VTTv3_SampleVideo(VideoTex, saturate(videoUV), caDir);
 
     // Vignette (dark falloff toward the glass rim).
     float vig = 1.0 - Vignette * smoothstep(0.35, 1.1, rad);
@@ -169,15 +168,15 @@ void VideoLens3_float(
     // Projector flicker (stepped at 24 fps) + per-pixel film grain.
     float time    = _TimeParameters.x;
     float frameId = floor(time * 24.0);
-    float flick   = 1.0 + Flicker * (BF6v3_Hash12(float2(frameId, 7.13)) - 0.5) * 2.0;
-    float grain   = (BF6v3_Hash12(UV * 1024.0 + frameId * 13.7) - 0.5) * Grain;
+    float flick   = 1.0 + Flicker * (VTTv3_Hash12(float2(frameId, 7.13)) - 0.5) * 2.0;
+    float grain   = (VTTv3_Hash12(UV * 1024.0 + frameId * 13.7) - 0.5) * Grain;
 
     // Fresnel: glass reflects more and lets less footage through at grazing angles.
     float NdotV = saturate(dot(normalize(NormalWS), normalize(ViewDirWS)));
     Fresnel = pow(1.0 - NdotV, max(FresnelPower, 0.01));
 
     // Power-on reveal: ramps brightness with a stuttering flicker near the start.
-    float revealFlicker = lerp(step(0.35, BF6v3_Hash12(float2(frameId, 3.1))), 1.0, saturate(Reveal * 2.0 - 0.6));
+    float revealFlicker = lerp(step(0.35, VTTv3_Hash12(float2(frameId, 3.1))), 1.0, saturate(Reveal * 2.0 - 0.6));
     float reveal = saturate(Reveal) * revealFlicker;
 
     // ---- v2: object-fixed front window mask ----
@@ -226,7 +225,7 @@ void VideoLens3_float(
     // ExposureWeight 0 = footage keeps its brightness regardless of scene exposure
     // (what you want for an intro); 1 = physically lit by the camera exposure.
     float3 hdr = max(footage + rim, 0.0);
-    Emission = lerp(hdr * BF6v3_InverseExposure(), hdr, saturate(ExposureWeight));
+    Emission = lerp(hdr * VTTv3_InverseExposure(), hdr, saturate(ExposureWeight));
 }
 
 // Half-precision entry point (Shader Graph picks _half when the node is set to Half).
@@ -257,4 +256,4 @@ void VideoLens3_half(
     Mask = (half)mk;
 }
 
-#endif // BF6_VIDEO_LENS3_INCLUDED
+#endif // VTT_VIDEO_LENS3_INCLUDED

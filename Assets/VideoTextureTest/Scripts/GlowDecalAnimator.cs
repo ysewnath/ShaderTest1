@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
 
-namespace BF6Intro
+namespace VideoTextureTest
 {
     /// <summary>
     /// Plays the "ignite" reveal on a SG_GlowDecal projector: the logo burns in left-to-right

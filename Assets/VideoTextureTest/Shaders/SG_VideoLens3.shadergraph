@@ -1064,7 +1064,7 @@
         },
         "preventRotation": false
     },
-    "m_Path": "BF6Intro",
+    "m_Path": "VideoTextureTest",
     "m_GraphPrecision": 1,
     "m_PreviewMode": 2,
     "m_OutputNode": {

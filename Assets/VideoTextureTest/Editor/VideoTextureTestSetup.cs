@@ -3,26 +3,26 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Video;
 
-namespace BF6Intro.EditorTools
+namespace VideoTextureTest.EditorTools
 {
-    public static class BF6IntroSetup
+    public static class VideoTextureTestSetup
     {
-        const string Root = "Assets/BF6Intro";
+        const string Root = "Assets/VideoTextureTest";
         const string ShaderPath = Root + "/Shaders/SG_VideoLens.shadergraph";
         const string MaterialPath = Root + "/Materials/M_VideoLens.mat";
-        const string RTPath = Root + "/Materials/RT_IntroVideo.renderTexture";
-        const string DefaultClipPath = "Assets/Reference/bf6_intro.mp4";
+        const string RTPath = Root + "/Materials/RT_VideoTexture.renderTexture";
+        const string DefaultClipPath = "";   // optional: path to a default VideoClip
 
         // ------------------------------------------------------------------
         // Apply the video lens to an existing mesh (e.g. Ball_Part of the material ball).
         // ------------------------------------------------------------------
-        [MenuItem("Tools/BF6 Intro/Apply Video Lens To Selected Object")]
+        [MenuItem("Tools/VideoTextureTest/Apply Video Lens To Selected Object")]
         public static void ApplyToSelected()
         {
             var go = Selection.activeGameObject;
             if (go == null || go.GetComponent<MeshFilter>() == null || go.GetComponent<MeshRenderer>() == null)
             {
-                EditorUtility.DisplayDialog("BF6 Intro", "Select a GameObject with a MeshFilter and MeshRenderer (e.g. Ball_Part).", "OK");
+                EditorUtility.DisplayDialog("VideoTextureTest", "Select a GameObject with a MeshFilter and MeshRenderer (e.g. Ball_Part).", "OK");
                 return;
             }
             ApplyTo(go);
@@ -33,7 +33,7 @@ namespace BF6Intro.EditorTools
             var shader = AssetDatabase.LoadAssetAtPath<Shader>(ShaderPath);
             if (shader == null)
             {
-                EditorUtility.DisplayDialog("BF6 Intro", $"Shader not found at {ShaderPath}.", "OK");
+                EditorUtility.DisplayDialog("VideoTextureTest", $"Shader not found at {ShaderPath}.", "OK");
                 return;
             }
             var clip = FindClip();
@@ -71,7 +71,7 @@ namespace BF6Intro.EditorTools
 
             // Swap every material slot on this renderer (keeps the slot count).
             var mr = go.GetComponent<MeshRenderer>();
-            Undo.RecordObject(mr, "Apply BF6 Video Lens");
+            Undo.RecordObject(mr, "Apply Video Lens");
             var mats = mr.sharedMaterials;
             for (int i = 0; i < mats.Length; i++) mats[i] = mat;
             mr.sharedMaterials = mats;
@@ -95,7 +95,7 @@ namespace BF6Intro.EditorTools
             EditorUtility.SetDirty(go);
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(go.scene);
             AssetDatabase.SaveAssets();
-            Debug.Log($"[BF6 Intro] Video lens applied to '{go.name}' (radius {r:0.###}, material {matPath}). Press Play.", go);
+            Debug.Log($"[VideoTextureTest] Video lens applied to '{go.name}' (radius {r:0.###}, material {matPath}). Press Play.", go);
         }
 
         // ------------------------------------------------------------------
@@ -105,13 +105,13 @@ namespace BF6Intro.EditorTools
         // ------------------------------------------------------------------
         const string ShaderPath3 = Root + "/Shaders/SG_VideoLens3.shadergraph";
 
-        [MenuItem("Tools/BF6 Intro/Apply Video Lens To Selected Object 3")]
+        [MenuItem("Tools/VideoTextureTest/Apply Video Lens To Selected Object 3")]
         public static void ApplyToSelected3()
         {
             var go = Selection.activeGameObject;
             if (go == null || go.GetComponent<MeshFilter>() == null || go.GetComponent<MeshRenderer>() == null)
             {
-                EditorUtility.DisplayDialog("BF6 Intro", "Select a GameObject with a MeshFilter and MeshRenderer (e.g. Ball_Part).", "OK");
+                EditorUtility.DisplayDialog("VideoTextureTest", "Select a GameObject with a MeshFilter and MeshRenderer (e.g. Ball_Part).", "OK");
                 return;
             }
             // Any other selected meshes become "extra parts" that continue the same lens/window.
@@ -127,7 +127,7 @@ namespace BF6Intro.EditorTools
             var shader = AssetDatabase.LoadAssetAtPath<Shader>(ShaderPath3);
             if (shader == null)
             {
-                EditorUtility.DisplayDialog("BF6 Intro", $"Shader not found at {ShaderPath3}.", "OK");
+                EditorUtility.DisplayDialog("VideoTextureTest", $"Shader not found at {ShaderPath3}.", "OK");
                 return;
             }
             var clip = FindClip();
@@ -204,7 +204,7 @@ namespace BF6Intro.EditorTools
             }
             EditorUtility.SetDirty(mat);
 
-            Undo.RecordObject(mr, "Apply BF6 Video Lens 3");
+            Undo.RecordObject(mr, "Apply Video Lens 3");
             AssignAll(mr, mat);
 
             // ---- Extra parts: same lens + window, converted into each part's own object space ----
@@ -246,14 +246,14 @@ namespace BF6Intro.EditorTools
                 }
                 EditorUtility.SetDirty(eMat);
 
-                Undo.RecordObject(emr, "Apply BF6 Video Lens 3");
+                Undo.RecordObject(emr, "Apply Video Lens 3");
                 AssignAll(emr, eMat);
                 extraRenderers.Add(emr);
             }
 
             var vp = go.GetComponent<VideoPlayer>();
             if (vp == null) vp = Undo.AddComponent<VideoPlayer>(go);
-            Undo.RecordObject(vp, "Apply BF6 Video Lens 3");
+            Undo.RecordObject(vp, "Apply Video Lens 3");
             vp.playOnAwake = false;
             vp.isLooping = true;
             vp.renderMode = VideoRenderMode.RenderTexture;
@@ -273,7 +273,7 @@ namespace BF6Intro.EditorTools
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(go.scene);
             AssetDatabase.SaveAssets();
             Selection.activeObject = mat;
-            Debug.Log($"[BF6 Intro] Video lens 3 applied to '{go.name}' + [{string.Join(", ", extras.Select(x => x.name))}]. Sphere center {center}, radius {radius:0.###}, " +
+            Debug.Log($"[VideoTextureTest] Video lens 3 applied to '{go.name}' + [{string.Join(", ", extras.Select(x => x.name))}]. Sphere center {center}, radius {radius:0.###}, " +
                       $"window aimed {(front != null ? "at " + front.name : "at camera")}, surface from '{(original != null ? original.name : "defaults")}'.", go);
         }
 
@@ -356,13 +356,13 @@ namespace BF6Intro.EditorTools
             return rt;
         }
 
-        [MenuItem("Tools/BF6 Intro/Create Video Lens Demo")]
+        [MenuItem("Tools/VideoTextureTest/Create Video Lens Demo")]
         public static void CreateDemo()
         {
             var shader = AssetDatabase.LoadAssetAtPath<Shader>(ShaderPath);
             if (shader == null)
             {
-                EditorUtility.DisplayDialog("BF6 Intro", $"Shader not found at {ShaderPath}. Let Unity finish importing and try again.", "OK");
+                EditorUtility.DisplayDialog("VideoTextureTest", $"Shader not found at {ShaderPath}. Let Unity finish importing and try again.", "OK");
                 return;
             }
 
@@ -398,7 +398,7 @@ namespace BF6Intro.EditorTools
 
             // Lens object: an egg-shaped sphere whose -Z side (the lens face) looks at the camera.
             var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            go.name = "BF6 Video Lens";
+            go.name = "Video Lens";
             Object.DestroyImmediate(go.GetComponent<Collider>());
             go.transform.localScale = new Vector3(1f, 1f, 1.6f);
             go.GetComponent<MeshRenderer>().sharedMaterial = mat;
@@ -410,7 +410,7 @@ namespace BF6Intro.EditorTools
             {
                 go.transform.position = anchor.position + anchor.forward * 3f;
                 // Object +Z points away from the camera, so its -Z lens face points at it,
-                // tilted a little like the BF6 shot.
+                // tilted a little for a more dynamic angle.
                 go.transform.rotation = Quaternion.LookRotation(anchor.forward, anchor.up) * Quaternion.Euler(-12f, 25f, 0f);
             }
 
@@ -426,14 +426,14 @@ namespace BF6Intro.EditorTools
             binder.renderTexture = rt;
             binder.targetRenderer = go.GetComponent<MeshRenderer>();
 
-            Undo.RegisterCreatedObjectUndo(go, "Create BF6 Video Lens");
+            Undo.RegisterCreatedObjectUndo(go, "Create Video Lens");
             Selection.activeGameObject = go;
             AssetDatabase.SaveAssets();
 
             if (clip == null)
-                Debug.LogWarning("[BF6 Intro] No VideoClip found. Assign one on the VideoPlayer of 'BF6 Video Lens'.");
+                Debug.LogWarning("[VideoTextureTest] No VideoClip found. Assign one on the VideoPlayer of 'Video Lens'.");
             else
-                Debug.Log($"[BF6 Intro] Video lens created with clip '{clip.name}'. Press Play.");
+                Debug.Log($"[VideoTextureTest] Video lens created with clip '{clip.name}'. Press Play.");
         }
     }
 }

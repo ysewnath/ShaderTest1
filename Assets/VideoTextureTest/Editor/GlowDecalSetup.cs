@@ -2,12 +2,12 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
 
-namespace BF6Intro.EditorTools
+namespace VideoTextureTest.EditorTools
 {
-    /// <summary>Creates a glowing-orange emissive logo decal (BF6 studio-bumper look).</summary>
-    public static class BF6GlowDecalSetup
+    /// <summary>Creates a glowing-orange emissive logo decal (logo projected onto hardware as red-hot light).</summary>
+    public static class GlowDecalSetup
     {
-        const string Root = "Assets/BF6Intro";
+        const string Root = "Assets/VideoTextureTest";
         const string ShaderPath = Root + "/Shaders/SG_GlowDecal.shadergraph";
         const string MaterialPath = Root + "/Materials/M_GlowDecal.mat";
         const string PlaceholderPath = Root + "/Textures/T_GlowLogo_Placeholder.png";
@@ -16,13 +16,13 @@ namespace BF6Intro.EditorTools
         /// Select the hardware to project onto (optional) and, optionally, a logo texture in the
         /// Project window, then run this. The decal projects along the Scene view camera's direction.
         /// </summary>
-        [MenuItem("Tools/BF6 Intro/Create Glow Decal On Selected")]
+        [MenuItem("Tools/VideoTextureTest/Create Glow Decal On Selected")]
         public static void CreateGlowDecal()
         {
             var shader = AssetDatabase.LoadAssetAtPath<Shader>(ShaderPath);
             if (shader == null)
             {
-                EditorUtility.DisplayDialog("BF6 Intro", $"Shader not found at {ShaderPath}. Let Unity finish importing.", "OK");
+                EditorUtility.DisplayDialog("VideoTextureTest", $"Shader not found at {ShaderPath}. Let Unity finish importing.", "OK");
                 return;
             }
 
@@ -71,20 +71,20 @@ namespace BF6Intro.EditorTools
                 pos = p0 - fwd * 0.5f;
             }
 
-            var go = new GameObject("BF6 Glow Decal");
+            var go = new GameObject("Glow Decal");
             go.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(fwd, up));
             var proj = go.AddComponent<DecalProjector>();
             proj.material = mat;
             proj.size = size;
             proj.pivot = new Vector3(0f, 0f, size.z * 0.5f);   // box starts at the GameObject and extends forward
             proj.drawDistance = 1000f;
-            go.AddComponent<BF6Intro.GlowDecalAnimator>();
+            go.AddComponent<VideoTextureTest.GlowDecalAnimator>();
 
             if (target != null) go.transform.SetParent(target.transform, true);   // moves with the hardware
-            Undo.RegisterCreatedObjectUndo(go, "Create BF6 Glow Decal");
+            Undo.RegisterCreatedObjectUndo(go, "Create Glow Decal");
             Selection.activeGameObject = go;
             AssetDatabase.SaveAssets();
-            Debug.Log($"[BF6 Intro] Glow decal created{(target != null ? " on '" + target.name + "'" : "")} with logo '{(logo != null ? logo.name : "none")}'. " +
+            Debug.Log($"[VideoTextureTest] Glow decal created{(target != null ? " on '" + target.name + "'" : "")} with logo '{(logo != null ? logo.name : "none")}'. " +
                       "Move/rotate/scale it like any object; press Play to see the ignite.", go);
         }
     }

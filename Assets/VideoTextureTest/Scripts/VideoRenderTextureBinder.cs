@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Video;
 
-namespace BF6Intro
+namespace VideoTextureTest
 {
     /// <summary>
     /// Plays a VideoClip into a RenderTexture and feeds it to the SG_VideoLens material
