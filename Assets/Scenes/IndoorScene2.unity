@@ -501,6 +501,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BF6Intro.GlowDecalAnimator
   playOnStart: 1
+  reveal: 1
   delay: 0.25
   igniteDuration: 1.6
   igniteCurve:
@@ -561,6 +562,59 @@ MonoBehaviour:
   m_Offset: {x: 0, y: 0, z: 0.5750099}
   m_Size: {x: 1.3416897, y: 0.33542243, z: 1.1500198}
   m_FadeFactor: 1
+--- !u!1 &622053930
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 622053932}
+  - component: {fileID: 622053931}
+  m_Layer: 0
+  m_Name: Timeline1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!320 &622053931
+PlayableDirector:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 622053930}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_PlayableAsset: {fileID: 11400000, guid: debc92637228abb4f8e63526f181a5a3, type: 2}
+  m_InitialState: 1
+  m_WrapMode: 0
+  m_DirectorUpdateMode: 1
+  m_InitialTime: 0
+  m_SceneBindings:
+  - key: {fileID: 9094546269600071698, guid: debc92637228abb4f8e63526f181a5a3, type: 2}
+    value: {fileID: 5836004154471423777}
+  - key: {fileID: -7748343032440919324, guid: debc92637228abb4f8e63526f181a5a3, type: 2}
+    value: {fileID: 5836004154471423780}
+  m_ExposedReferences:
+    m_References: []
+--- !u!4 &622053932
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 622053930}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1.46577, y: -0.5, z: -16.02768}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &884071954
 GameObject:
   m_ObjectHideFlags: 0
@@ -2674,6 +2728,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4988965024519814909, guid: acbc130d5621a824cbef87568306312f, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5836004154471423776}
+    - targetCorrespondingSourceObject: {fileID: 4988965024519814909, guid: acbc130d5621a824cbef87568306312f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5836004154471423780}
   m_SourcePrefab: {fileID: 100100000, guid: acbc130d5621a824cbef87568306312f, type: 3}
 --- !u!23 &5836004154471423767 stripped
 MeshRenderer:
@@ -2711,6 +2768,8 @@ MonoBehaviour:
   muteAudio: 1
   extraRenderers:
   - {fileID: 5836004154471423767}
+  autoPlay: 1
+  reveal: 1
   animateReveal: 1
   revealDuration: 1.25
   revealCurve:
@@ -2770,11 +2829,33 @@ VideoPlayer:
   m_DirectAudioMutes: 00
   m_ControlledAudioTrackCount: 1
   m_PlayOnAwake: 0
-  m_SkipOnDrop: 1
+  m_SkipOnDrop: 0
   m_Looping: 1
   m_WaitForFirstFrame: 1
   m_FrameReadyEventEnabled: 0
   m_VideoShaders: []
+--- !u!95 &5836004154471423780
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5836004154471423768}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 0}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!4 &5886844021290701701
 Transform:
   m_ObjectHideFlags: 0
@@ -4338,3 +4419,4 @@ SceneRoots:
   - {fileID: 1191974067}
   - {fileID: 1522427161}
   - {fileID: 1276148452}
+  - {fileID: 622053932}

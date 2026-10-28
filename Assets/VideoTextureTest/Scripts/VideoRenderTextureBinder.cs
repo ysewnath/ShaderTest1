@@ -8,7 +8,11 @@ namespace VideoTextureTest
     /// Plays a VideoClip into a RenderTexture and feeds it to the SG_VideoLens material
     /// (or any material with a texture property). Also drives the shader's "_Reveal"
     /// power-on animation and can keep the lens face aimed at a camera.
+    ///
+    /// Timeline: turn off Auto Play and keyframe <see cref="reveal"/> with a regular
+    /// Animation Track (it previews while scrubbing in Edit mode).
     /// </summary>
+    [ExecuteAlways]
     [RequireComponent(typeof(VideoPlayer))]
     [DisallowMultipleComponent]
     public class VideoRenderTextureBinder : MonoBehaviour
@@ -34,7 +38,15 @@ namespace VideoTextureTest
         [Tooltip("Other renderers (e.g. Front_Part) that continue the same video lens. They share this VideoPlayer.")]
         public Renderer[] extraRenderers = new Renderer[0];
 
-        [Header("Power-on reveal")]
+        [Header("Playback")]
+        [Tooltip("Play the video (and the power-on below) automatically when entering Play mode. " +
+                 "Turn OFF when a Timeline drives the video and Reveal.")]
+        public bool autoPlay = true;
+
+        [Tooltip("Shader Reveal / power-on amount (0 = off, 1 = fully on). Animatable: keyframe it with an Animation Track in Timeline.")]
+        [Range(0f, 1f)] public float reveal = 1f;
+
+        [Header("Auto Play power-on")]
         public bool animateReveal = true;
         [Min(0.01f)] public float revealDuration = 1.25f;
         public AnimationCurve revealCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
@@ -48,20 +60,30 @@ namespace VideoTextureTest
         VideoPlayer _player;
         MaterialPropertyBlock _mpb;
         bool _ownsTexture;
-        float _reveal = 1f;
         int _texId, _revealId;
         static readonly int LensForwardId = Shader.PropertyToID("_LensForward");
         static readonly int LensUpId = Shader.PropertyToID("_LensUp");
 
         public RenderTexture Texture => renderTexture;
 
-        void OnEnable()
+        void EnsureInit()
         {
-            _player = GetComponent<VideoPlayer>();
+            if (_player == null) _player = GetComponent<VideoPlayer>();
             if (targetRenderer == null) targetRenderer = GetComponent<Renderer>();
             _mpb ??= new MaterialPropertyBlock();
             _texId = Shader.PropertyToID(textureProperty);
             _revealId = Shader.PropertyToID(revealProperty);
+        }
+
+        void OnEnable()
+        {
+            EnsureInit();
+            if (!Application.isPlaying)
+            {
+                // Edit mode: just show the current Reveal / texture (Timeline preview, scrubbing).
+                Apply();
+                return;
+            }
 
             EnsureRenderTexture();
 
@@ -69,14 +91,37 @@ namespace VideoTextureTest
             if (muteAudio) _player.audioOutputMode = VideoAudioOutputMode.None;
             _player.renderMode = VideoRenderMode.RenderTexture;
             _player.targetTexture = renderTexture;
-            _player.prepareCompleted += OnPrepared;
 
-            SetReveal(animateReveal ? 0f : 1f);
+            if (!autoPlay)
+            {
+                // A Timeline drives the video and Reveal.
+                Apply();
+                return;
+            }
+
+            _player.prepareCompleted += OnPrepared;
+            if (animateReveal) reveal = 0f;
+            Apply();
             _player.Prepare();
+        }
+
+        void OnValidate()
+        {
+            if (!isActiveAndEnabled) return;
+            EnsureInit();
+            Apply();
+        }
+
+        // Called after an Animation Track / Animator writes 'reveal' (also while scrubbing in Edit mode).
+        void OnDidApplyAnimationProperties()
+        {
+            EnsureInit();
+            Apply();
         }
 
         void OnDisable()
         {
+            if (!Application.isPlaying) return;
             if (_player != null)
             {
                 _player.prepareCompleted -= OnPrepared;
@@ -93,7 +138,8 @@ namespace VideoTextureTest
 
         void LateUpdate()
         {
-            if (aimLensAtCamera) Apply();
+            EnsureInit();
+            Apply();   // keeps Reveal (animated or not), the texture and lens aiming in sync
         }
 
         void EnsureRenderTexture()
@@ -141,7 +187,7 @@ namespace VideoTextureTest
         /// <summary>Set the shader's power-on amount (0 = off, 1 = fully on).</summary>
         public void SetReveal(float value)
         {
-            _reveal = value;
+            reveal = Mathf.Clamp01(value);
             Apply();
         }
 
@@ -166,7 +212,7 @@ namespace VideoTextureTest
             if (r == null) return;
             r.GetPropertyBlock(_mpb);
             if (renderTexture != null) _mpb.SetTexture(_texId, renderTexture);
-            _mpb.SetFloat(_revealId, _reveal);
+            _mpb.SetFloat(_revealId, reveal);
 
             if (aimLensAtCamera)
             {
