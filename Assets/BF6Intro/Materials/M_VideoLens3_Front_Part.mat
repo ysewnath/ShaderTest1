@@ -1,0 +1,162 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-5452325761351825742
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da692e001514ec24dbc4cca1949ff7e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.HighDefinition.Editor::UnityEditor.Rendering.HighDefinition.AssetVersion
+  version: 13
+  hdPluginSubTargetMaterialVersions:
+    m_Keys: []
+    m_Values: 
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_VideoLens3_Front_Part
+  m_Shader: {fileID: -6465566751694194690, guid: 3e4cdd542ff145b44b4f0ed4e926efcd, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _DISABLE_SSR_TRANSPARENT
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: 2225
+  stringTagMap:
+    MotionVector: User
+  disabledShaderPasses:
+  - TransparentDepthPrepass
+  - TransparentDepthPostpass
+  - TransparentBackface
+  - RayTracingPrepass
+  - MOTIONVECTORS
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _VideoTex:
+        m_Texture: {fileID: 8400000, guid: 4f273dd22bb00e44ab8e0faee5653415, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AddPrecomputedVelocity: 0
+    - _AlphaCutoffEnable: 0
+    - _AlphaDstBlend: 0
+    - _AlphaSrcBlend: 1
+    - _BlendMode: 0
+    - _Bulge: 0.2
+    - _ChromaticAberration: 0.006
+    - _ConservativeDepthOffsetEnable: 0
+    - _CullMode: 2
+    - _CullModeForward: 2
+    - _DepthOffsetEnable: 0
+    - _DoubleSidedEnable: 0
+    - _DoubleSidedGIMode: 0
+    - _DoubleSidedNormalMode: 2
+    - _DstBlend: 0
+    - _DstBlend2: 0
+    - _EnableBlendModePreserveSpecularLighting: 1
+    - _EnableFogOnTransparent: 1
+    - _ExcludeFromTUAndAA: 0
+    - _ExposureWeight: 0
+    - _FadeCurve: 0.6
+    - _Flicker: 0.04
+    - _FresnelPower: 4
+    - _GlassIOR: 1.45
+    - _GlassMetallic: 0
+    - _Grain: 0.035
+    - _InteriorDepth: 0.2999137
+    - _MappingMode: 1
+    - _MaskDebug: 0
+    - _MaskFrontCutoff: 0.55
+    - _MaskRadius: 1.1
+    - _MaskRotation: 0
+    - _MaskSoftness: 0.5
+    - _MaterialID: 1
+    - _MaterialTypeMask: 2
+    - _MeshRadius: 0.49985617
+    - _OpaqueCullMode: 2
+    - _OutsideMetallic: 0
+    - _OutsideSmoothness: 0.25
+    - _PerPixelSorting: 0
+    - _ProjectionSize: 1.299626
+    - _RayTracing: 0
+    - _ReceivesSSR: 1
+    - _ReceivesSSRTransparent: 0
+    - _RefractionModel: 0
+    - _RenderQueueType: 1
+    - _RequireSplitLighting: 0
+    - _Reveal: 0.2
+    - _RingWidth: 0
+    - _Smoothness: 0.96
+    - _SrcBlend: 1
+    - _StencilRef: 0
+    - _StencilRefDepth: 8
+    - _StencilRefDistortionVec: 4
+    - _StencilRefGBuffer: 10
+    - _StencilRefMV: 40
+    - _StencilWriteMask: 6
+    - _StencilWriteMaskDepth: 9
+    - _StencilWriteMaskDistortionVec: 4
+    - _StencilWriteMaskGBuffer: 15
+    - _StencilWriteMaskMV: 41
+    - _SupportDecals: 1
+    - _SurfaceType: 0
+    - _TransmissionEnable: 1
+    - _TransparentBackfaceEnable: 0
+    - _TransparentCullMode: 2
+    - _TransparentDepthPostpassEnable: 0
+    - _TransparentDepthPrepassEnable: 0
+    - _TransparentSortPriority: 0
+    - _TransparentWritingMotionVec: 0
+    - _TransparentZWrite: 0
+    - _UseShadowThreshold: 0
+    - _VideoIntensity: 3
+    - _VideoSpread: 2
+    - _Vignette: 0.35
+    - _ZTestDepthEqualForOpaque: 3
+    - _ZTestGBuffer: 4
+    - _ZTestTransparent: 4
+    - _ZWrite: 1
+    m_Colors:
+    - _DoubleSidedConstants: {r: 1, g: 1, b: -1, a: 0}
+    - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
+    - _FresnelColor: {r: 0.3, g: 0.38, b: 0.5, a: 1}
+    - _GlassColor: {r: 0.015, g: 0.018, b: 0.022, a: 1}
+    - _LensCenter: {r: -0.000000053151172, g: 0.00003749132, b: -0.0000031004856, a: 0}
+    - _LensForward: {r: 0.00000027688634, g: 0.33155987, b: 0.9434342, a: 0}
+    - _LensUp: {r: 0.00000008742278, g: 1, b: 0.00000032584137, a: 0}
+    - _MaskForward: {r: 0.00000027688634, g: 0.33155987, b: 0.9434342, a: 0}
+    - _MaskOffsetStretch: {r: 0, g: 0, b: 1, a: 1}
+    - _MaskUp: {r: 0.00000008742278, g: 1, b: 0.00000032584137, a: 0}
+    - _OutsideColor: {r: 0.9, g: 0.9, b: 0.9, a: 1}
+    - _RingColor: {r: 1, g: 0.85, b: 0.55, a: 1}
+    - _VideoScaleOffset: {r: 0.5625, g: 1, b: 0.21875, a: 0}
+    - _VideoTint: {r: 1, g: 1, b: 1, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

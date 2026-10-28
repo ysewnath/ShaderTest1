@@ -28,6 +28,12 @@ namespace BF6Intro
         public string textureProperty = "_VideoTex";
         public string revealProperty = "_Reveal";
 
+        [Tooltip("Play the video without sound.")]
+        public bool muteAudio = true;
+
+        [Tooltip("Other renderers (e.g. Front_Part) that continue the same video lens. They share this VideoPlayer.")]
+        public Renderer[] extraRenderers = new Renderer[0];
+
         [Header("Power-on reveal")]
         public bool animateReveal = true;
         [Min(0.01f)] public float revealDuration = 1.25f;
@@ -60,6 +66,7 @@ namespace BF6Intro
             EnsureRenderTexture();
 
             _player.playOnAwake = false;
+            if (muteAudio) _player.audioOutputMode = VideoAudioOutputMode.None;
             _player.renderMode = VideoRenderMode.RenderTexture;
             _player.targetTexture = renderTexture;
             _player.prepareCompleted += OnPrepared;
@@ -145,10 +152,19 @@ namespace BF6Intro
             upOS = target.InverseTransformDirection(cam.up).normalized;
         }
 
+        static readonly int LensCenterId = Shader.PropertyToID("_LensCenter");
+
         void Apply()
         {
-            if (targetRenderer == null) return;
-            targetRenderer.GetPropertyBlock(_mpb);
+            ApplyTo(targetRenderer);
+            if (extraRenderers != null)
+                foreach (var r in extraRenderers) ApplyTo(r);
+        }
+
+        void ApplyTo(Renderer r)
+        {
+            if (r == null) return;
+            r.GetPropertyBlock(_mpb);
             if (renderTexture != null) _mpb.SetTexture(_texId, renderTexture);
             _mpb.SetFloat(_revealId, _reveal);
 
@@ -157,12 +173,16 @@ namespace BF6Intro
                 var cam = lensCamera != null ? lensCamera : Camera.main;
                 if (cam != null)
                 {
-                    ComputeLensBasis(targetRenderer.transform, cam.transform, out var f, out var u);
-                    _mpb.SetVector(LensForwardId, f);
-                    _mpb.SetVector(LensUpId, u);
+                    // Aim from the lens center (not the pivot) so every part agrees on the direction.
+                    var t = r.transform;
+                    Vector3 centerOS = r.sharedMaterial != null && r.sharedMaterial.HasProperty(LensCenterId)
+                        ? (Vector3)r.sharedMaterial.GetVector(LensCenterId) : Vector3.zero;
+                    Vector3 centerWS = t.TransformPoint(centerOS);
+                    _mpb.SetVector(LensForwardId, t.InverseTransformDirection((cam.transform.position - centerWS).normalized).normalized);
+                    _mpb.SetVector(LensUpId, t.InverseTransformDirection(cam.transform.up).normalized);
                 }
             }
-            targetRenderer.SetPropertyBlock(_mpb);
+            r.SetPropertyBlock(_mpb);
         }
     }
 }
