@@ -99,9 +99,9 @@ namespace BF6Intro.EditorTools
         }
 
         // ------------------------------------------------------------------
-        // Version 3: keeps the original surface (gold) outside the window and fades
-        // it into the video. Sphere-fits the mesh and aims the window at the logo side.
-        // Version 1 above is intentionally left unchanged.
+        // Version 3 (KEPT / frozen at the user's request): keeps the original surface (gold)
+        // outside the window and fades it into the video. Sphere-fits the mesh, aims the
+        // window at the logo side, and continues across extra parts (Front_Part).
         // ------------------------------------------------------------------
         const string ShaderPath3 = Root + "/Shaders/SG_VideoLens3.shadergraph";
 
@@ -178,7 +178,7 @@ namespace BF6Intro.EditorTools
             mat.SetFloat("_MaskSoftness", 0.5f);      // still a smooth gold -> video fade
             mat.SetFloat("_FadeCurve", 0.6f);         // video takes over sooner
             mat.SetFloat("_VideoSpread", 2.0f);       // footage glows through the gold fade zone
-            mat.SetFloat("_MaskFrontCutoff", 0.55f);  // can wrap further around the sides
+            mat.SetFloat("_MaskFrontCutoff", 1.0f);   // full wrap: no hard cutoff from behind (user-tuned)
             mat.SetFloat("_VideoIntensity", 3.0f);
             mat.SetFloat("_Vignette", 0.35f);
             mat.SetFloat("_MaskDebug", 0f);
