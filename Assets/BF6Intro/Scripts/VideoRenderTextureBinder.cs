@@ -7,7 +7,7 @@ namespace BF6Intro
     /// <summary>
     /// Plays a VideoClip into a RenderTexture and feeds it to the SG_VideoLens material
     /// (or any material with a texture property). Also drives the shader's "_Reveal"
-    /// power-on animation when playback starts.
+    /// power-on animation and can keep the lens face aimed at a camera.
     /// </summary>
     [RequireComponent(typeof(VideoPlayer))]
     [DisallowMultipleComponent]
@@ -33,10 +33,19 @@ namespace BF6Intro
         [Min(0.01f)] public float revealDuration = 1.25f;
         public AnimationCurve revealCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
+        [Header("Lens aiming (Lens Interior mode)")]
+        [Tooltip("Every frame, point the lens face (and the footage's 'up') at this camera.")]
+        public bool aimLensAtCamera = true;
+        [Tooltip("Camera to aim at. Defaults to Camera.main.")]
+        public Camera lensCamera;
+
         VideoPlayer _player;
         MaterialPropertyBlock _mpb;
         bool _ownsTexture;
+        float _reveal = 1f;
         int _texId, _revealId;
+        static readonly int LensForwardId = Shader.PropertyToID("_LensForward");
+        static readonly int LensUpId = Shader.PropertyToID("_LensUp");
 
         public RenderTexture Texture => renderTexture;
 
@@ -73,6 +82,11 @@ namespace BF6Intro
                 renderTexture = null;
                 _ownsTexture = false;
             }
+        }
+
+        void LateUpdate()
+        {
+            if (aimLensAtCamera) Apply();
         }
 
         void EnsureRenderTexture()
@@ -120,10 +134,34 @@ namespace BF6Intro
         /// <summary>Set the shader's power-on amount (0 = off, 1 = fully on).</summary>
         public void SetReveal(float value)
         {
+            _reveal = value;
+            Apply();
+        }
+
+        /// <summary>Object-space lens forward/up that make the lens face the given camera.</summary>
+        public static void ComputeLensBasis(Transform target, Transform cam, out Vector3 forwardOS, out Vector3 upOS)
+        {
+            forwardOS = target.InverseTransformDirection((cam.position - target.position).normalized).normalized;
+            upOS = target.InverseTransformDirection(cam.up).normalized;
+        }
+
+        void Apply()
+        {
             if (targetRenderer == null) return;
             targetRenderer.GetPropertyBlock(_mpb);
             if (renderTexture != null) _mpb.SetTexture(_texId, renderTexture);
-            _mpb.SetFloat(_revealId, value);
+            _mpb.SetFloat(_revealId, _reveal);
+
+            if (aimLensAtCamera)
+            {
+                var cam = lensCamera != null ? lensCamera : Camera.main;
+                if (cam != null)
+                {
+                    ComputeLensBasis(targetRenderer.transform, cam.transform, out var f, out var u);
+                    _mpb.SetVector(LensForwardId, f);
+                    _mpb.SetVector(LensUpId, u);
+                }
+            }
             targetRenderer.SetPropertyBlock(_mpb);
         }
     }

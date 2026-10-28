@@ -12,7 +12,9 @@
 //   Mode 0  = Mesh UV      : flat screens / quads. Tangent-space parallax + barrel bulge.
 //   Mode 1  = Lens Interior: any rounded mesh (sphere, capsule, egg). The video is
 //                            projected on a plane inside the object, viewed through
-//                            a refracted ray. Lens front faces local -Z.
+//                            a refracted ray. The lens faces LensForward (object space),
+//                            centered on LensCenter; VideoRenderTextureBinder can aim it
+//                            at the camera every frame.
 // ----------------------------------------------------------------------------
 #ifndef BF6_VIDEO_LENS_INCLUDED
 #define BF6_VIDEO_LENS_INCLUDED
@@ -68,11 +70,24 @@ void VideoLens_float(
     float  Flicker,
     float  Grain,
     float  Reveal,
+    float4 LensCenter,
+    float4 LensForward,
+    float4 LensUp,
     out float3 Emission,
     out float  Fresnel)
 {
-    float3 V   = normalize(ViewDirOS);
-    float3 N   = normalize(NormalOS);
+    // Build "lens space": the lens face looks along LensForward (object space),
+    // LensUp keeps the footage upright. Default (0,0,-1)/(0,1,0) = identity.
+    float3 lz = -normalize(LensForward.xyz + float3(0, 0, -1e-5));
+    float3 upHint = LensUp.xyz;
+    if (abs(dot(normalize(upHint + 1e-5), lz)) > 0.99) upHint = float3(1, 0, 0);
+    float3 lx = normalize(cross(upHint, lz));
+    float3 ly = cross(lz, lx);
+    float3x3 toLens = float3x3(lx, ly, lz);
+
+    float3 V   = normalize(mul(toLens, ViewDirOS));
+    float3 N   = normalize(mul(toLens, NormalOS));
+    float3 P   = mul(toLens, PositionOS - LensCenter.xyz);
     float2 uv;          // video UV before scale/offset
     float2 centered;    // -0.5..0.5 position used for vignette / CA direction
     float  frontMask = 1.0;
@@ -94,8 +109,8 @@ void VideoLens_float(
         float3 R = refract(-V, N, 1.0 / max(IOR, 1.0001));
         if (dot(R, R) < 1e-4) R = -V;                             // total internal reflection fallback
         R.z = max(R.z, 0.05);                                     // ray must travel into the object
-        float t = (Depth - PositionOS.z) / R.z;
-        float3 hit = PositionOS + R * t;
+        float t = (Depth - P.z) / R.z;
+        float3 hit = P + R * t;
         uv = hit.xy / max(ProjectionSize, 1e-3) + 0.5;
         centered = uv - 0.5;
         frontMask = smoothstep(0.0, 0.35, -N.z);                  // only the side facing -Z shows footage
@@ -147,12 +162,13 @@ void VideoLens_half(
     half3 NormalWS, half3 ViewDirWS, half Mode, half4 UVScaleOffset, half Depth, half IOR, half ProjectionSize,
     half Bulge, half ChromaticAberration, half Vignette, half4 Tint, half Intensity, half ExposureWeight,
     half FresnelPower, half4 FresnelColor, half Flicker, half Grain, half Reveal,
+    half4 LensCenter, half4 LensForward, half4 LensUp,
     out half3 Emission, out half Fresnel)
 {
     float3 e; float f;
     VideoLens_float(VideoTex, UV, PositionOS, NormalOS, ViewDirOS, ViewDirTS, NormalWS, ViewDirWS, Mode,
         UVScaleOffset, Depth, IOR, ProjectionSize, Bulge, ChromaticAberration, Vignette, Tint, Intensity,
-        ExposureWeight, FresnelPower, FresnelColor, Flicker, Grain, Reveal, e, f);
+        ExposureWeight, FresnelPower, FresnelColor, Flicker, Grain, Reveal, LensCenter, LensForward, LensUp, e, f);
     Emission = (half3)e;
     Fresnel  = (half)f;
 }
