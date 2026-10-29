@@ -177,7 +177,7 @@ Material:
     - _MaskOffsetStretch: {r: 0.19, g: 0, b: 1.5, a: 1.5}
     - _MaskUp: {r: 0, g: 1, b: 0, a: 0}
     - _RingColor: {r: 1, g: 0.85, b: 0.55, a: 1}
-    - _VideoScaleOffset: {r: 0.5625, g: 1, b: 0.21875, a: 0}
+    - _VideoScaleOffset: {r: 1, g: 1, b: 0, a: 0}
     - _VideoTint: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
