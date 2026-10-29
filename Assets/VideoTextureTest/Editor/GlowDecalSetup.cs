@@ -7,11 +7,6 @@ namespace VideoTextureTest.EditorTools
     /// <summary>Creates a glowing-orange emissive logo decal (logo projected onto hardware as red-hot light).</summary>
     public static class GlowDecalSetup
     {
-        const string Root = "Assets/VideoTextureTest";
-        const string ShaderPath = Root + "/Shaders/SG_GlowDecal.shadergraph";
-        const string MaterialPath = Root + "/Materials/M_GlowDecal.mat";
-        const string PlaceholderPath = Root + "/Textures/T_GlowLogo_Placeholder.png";
-
         /// <summary>
         /// Select the hardware to project onto (optional) and, optionally, a logo texture in the
         /// Project window, then run this. The decal projects along the Scene view camera's direction.
@@ -19,21 +14,22 @@ namespace VideoTextureTest.EditorTools
         [MenuItem("Tools/VideoTextureTest/Create Glow Decal On Selected")]
         public static void CreateGlowDecal()
         {
-            var shader = AssetDatabase.LoadAssetAtPath<Shader>(ShaderPath);
+            var shader = ToolPaths.FindShader("SG_GlowDecal");
             if (shader == null)
             {
-                EditorUtility.DisplayDialog("VideoTextureTest", $"Shader not found at {ShaderPath}. Let Unity finish importing.", "OK");
+                EditorUtility.DisplayDialog("VideoTextureTest", "Couldn't find the SG_GlowDecal shader graph in the project. Let Unity finish importing.", "OK");
                 return;
             }
 
             // Logo: a texture selected in the Project window, else the placeholder.
             Texture2D logo = null;
             foreach (var o in Selection.objects) if (o is Texture2D t) { logo = t; break; }
-            if (logo == null) logo = AssetDatabase.LoadAssetAtPath<Texture2D>(PlaceholderPath);
+            var placeholder = ToolPaths.Load<Texture2D>("T_GlowLogo_Placeholder.png");
+            if (logo == null) logo = placeholder;
 
-            if (!AssetDatabase.IsValidFolder(Root + "/Materials")) AssetDatabase.CreateFolder(Root, "Materials");
-            string matPath = logo != null && AssetDatabase.GetAssetPath(logo) != PlaceholderPath
-                ? $"{Root}/Materials/M_GlowDecal_{logo.name}.mat" : MaterialPath;
+            string matPath = logo != null && logo != placeholder
+                ? ToolPaths.AssetPath("Materials", $"M_GlowDecal_{logo.name}.mat")
+                : ToolPaths.AssetPath("Materials", "M_GlowDecal.mat");
             var mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
             if (mat == null)
             {

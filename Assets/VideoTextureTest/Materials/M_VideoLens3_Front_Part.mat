@@ -93,7 +93,7 @@ Material:
     - _InteriorDepth: 0.2999137
     - _MappingMode: 1
     - _MaskDebug: 0
-    - _MaskFrontCutoff: 0.55
+    - _MaskFrontCutoff: 1
     - _MaskRadius: 1.1
     - _MaskRotation: 0
     - _MaskSoftness: 0.5

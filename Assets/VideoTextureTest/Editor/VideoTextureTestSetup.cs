@@ -7,11 +7,9 @@ namespace VideoTextureTest.EditorTools
 {
     public static class VideoTextureTestSetup
     {
-        const string Root = "Assets/VideoTextureTest";
-        const string ShaderPath = Root + "/Shaders/SG_VideoLens.shadergraph";
-        const string MaterialPath = Root + "/Materials/M_VideoLens.mat";
-        const string RTPath = Root + "/Materials/RT_VideoTexture.renderTexture";
-        const string DefaultClipPath = "";   // optional: path to a default VideoClip
+        // No hardcoded paths: the tool folder and its assets are resolved at runtime (see ToolPaths).
+        static string MaterialPath => ToolPaths.AssetPath("Materials", "M_VideoLens.mat");
+        static string RTPath => ToolPaths.AssetPath("Materials", "RT_VideoTexture.renderTexture");
 
         // ------------------------------------------------------------------
         // Apply the video lens to an existing mesh (e.g. Ball_Part of the material ball).
@@ -30,18 +28,18 @@ namespace VideoTextureTest.EditorTools
 
         public static void ApplyTo(GameObject go)
         {
-            var shader = AssetDatabase.LoadAssetAtPath<Shader>(ShaderPath);
+            var shader = ToolPaths.FindShader("SG_VideoLens");
             if (shader == null)
             {
-                EditorUtility.DisplayDialog("VideoTextureTest", $"Shader not found at {ShaderPath}.", "OK");
+                EditorUtility.DisplayDialog("VideoTextureTest", "Couldn't find the SG_VideoLens shader graph in the project.", "OK");
                 return;
             }
             var clip = FindClip();
-            if (!AssetDatabase.IsValidFolder(Root + "/Materials")) AssetDatabase.CreateFolder(Root, "Materials");
+            ToolPaths.EnsureFolder("Materials");
             var rt = GetOrCreateRT(clip);
 
             // Per-object material so its lens fit doesn't fight other objects.
-            string matPath = $"{Root}/Materials/M_VideoLens_{go.name}.mat";
+            string matPath = ToolPaths.AssetPath("Materials", $"M_VideoLens_{go.name}.mat");
             var mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
             if (mat == null)
             {
@@ -103,7 +101,6 @@ namespace VideoTextureTest.EditorTools
         // outside the window and fades it into the video. Sphere-fits the mesh, aims the
         // window at the logo side, and continues across extra parts (Front_Part).
         // ------------------------------------------------------------------
-        const string ShaderPath3 = Root + "/Shaders/SG_VideoLens3.shadergraph";
 
         [MenuItem("Tools/VideoTextureTest/Apply Video Lens To Selected Object 3")]
         public static void ApplyToSelected3()
@@ -124,14 +121,14 @@ namespace VideoTextureTest.EditorTools
         /// a sibling named "Front_Part" (the ring that fills the material ball's opening) is used.</param>
         public static void ApplyTo3(GameObject go, System.Collections.Generic.List<GameObject> extras = null)
         {
-            var shader = AssetDatabase.LoadAssetAtPath<Shader>(ShaderPath3);
+            var shader = ToolPaths.FindShader("SG_VideoLens3");
             if (shader == null)
             {
-                EditorUtility.DisplayDialog("VideoTextureTest", $"Shader not found at {ShaderPath3}.", "OK");
+                EditorUtility.DisplayDialog("VideoTextureTest", "Couldn't find the SG_VideoLens3 shader graph in the project.", "OK");
                 return;
             }
             var clip = FindClip();
-            if (!AssetDatabase.IsValidFolder(Root + "/Materials")) AssetDatabase.CreateFolder(Root, "Materials");
+            ToolPaths.EnsureFolder("Materials");
             var rt = GetOrCreateRT(clip);
             var mr = go.GetComponent<MeshRenderer>();
 
@@ -145,7 +142,7 @@ namespace VideoTextureTest.EditorTools
                     .FirstOrDefault(m => m != null && m.name == "Gold");
             }
 
-            string matPath = $"{Root}/Materials/M_VideoLens3_{go.name}.mat";
+            string matPath = ToolPaths.AssetPath("Materials", $"M_VideoLens3_{go.name}.mat");
             var mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
             bool isNew = mat == null;
             if (isNew)
@@ -219,7 +216,7 @@ namespace VideoTextureTest.EditorTools
             {
                 var emr = e.GetComponent<MeshRenderer>();
                 var eOriginal = emr.sharedMaterial;
-                string ePath = $"{Root}/Materials/M_VideoLens3_{e.name}.mat";
+                string ePath = ToolPaths.AssetPath("Materials", $"M_VideoLens3_{e.name}.mat");
                 var eMat = AssetDatabase.LoadAssetAtPath<Material>(ePath);
                 if (eMat == null) { eMat = new Material(shader); AssetDatabase.CreateAsset(eMat, ePath); }
 
@@ -275,6 +272,215 @@ namespace VideoTextureTest.EditorTools
             Selection.activeObject = mat;
             Debug.Log($"[VideoTextureTest] Video lens 3 applied to '{go.name}' + [{string.Join(", ", extras.Select(x => x.name))}]. Sphere center {center}, radius {radius:0.###}, " +
                       $"window aimed {(front != null ? "at " + front.name : "at camera")}, surface from '{(original != null ? original.name : "defaults")}'.", go);
+        }
+
+        // ------------------------------------------------------------------
+        // Version 4: like version 3, but the mesh keeps its ORIGINAL textured HDRP Lit surface
+        // outside the window (Base Map + tiling, Base Color, Mask Map with Metallic/Smoothness/AO
+        // remapping, Normal Map + scale), copied from its current material. Built for textured
+        // meshes such as rocks. Versions 1 and 3 above are left unchanged.
+        // ------------------------------------------------------------------
+
+        [MenuItem("Tools/VideoTextureTest/Apply Video Lens To Selected Object 4")]
+        public static void ApplyToSelected4()
+        {
+            var go = Selection.activeGameObject;
+            if (go == null || go.GetComponent<MeshFilter>() == null || go.GetComponent<MeshRenderer>() == null)
+            {
+                EditorUtility.DisplayDialog("VideoTextureTest", "Select a GameObject with a MeshFilter and MeshRenderer (e.g. a rock).", "OK");
+                return;
+            }
+            // Any other selected meshes become "extra parts" that continue the same lens/window.
+            var extras = Selection.gameObjects.Where(g => g != go && g.GetComponent<MeshRenderer>() != null).ToList();
+            ApplyTo4(go, extras);
+        }
+
+        /// <param name="go">The main shell (sphere-fit, owns the VideoPlayer).</param>
+        /// <param name="extras">Other parts that should continue the effect seamlessly. If null/empty,
+        /// a sibling named "Front_Part" (the ring that fills the material ball's opening) is used.</param>
+        public static void ApplyTo4(GameObject go, System.Collections.Generic.List<GameObject> extras = null)
+        {
+            var shader = ToolPaths.FindShader("SG_VideoLens4");
+            if (shader == null)
+            {
+                EditorUtility.DisplayDialog("VideoTextureTest", "Couldn't find the SG_VideoLens4 shader graph in the project.", "OK");
+                return;
+            }
+            var clip = FindClip();
+            ToolPaths.EnsureFolder("Materials");
+            var rt = GetOrCreateRT(clip);
+            var mr = go.GetComponent<MeshRenderer>();
+
+            // Original surface: the renderer's current material. If it's already one of our video lens
+            // materials, its surface settings are kept as they are (re-running doesn't reset your tweaks).
+            Material original = mr.sharedMaterial;
+            bool originalIsOurs = original != null && original.shader != null && original.shader.name.Contains("SG_VideoLens");
+
+            string matPath = ToolPaths.AssetPath("Materials", $"M_VideoLens4_{go.name}.mat");
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+            bool isNew = mat == null;
+            if (isNew)
+            {
+                mat = new Material(shader);
+                AssetDatabase.CreateAsset(mat, matPath);
+            }
+
+            if (original != null && original != mat) CopySurface(original, mat);   // textures, tiling, remapping
+
+            // True sphere center/radius (the shell has an opening, so bounds.center is off).
+            var mesh = go.GetComponent<MeshFilter>().sharedMesh;
+            FitSphere(mesh.vertices, out var center, out var radius);
+
+            mat.SetTexture("_VideoTex", rt);
+            mat.SetFloat("_MappingMode", 1f);
+            mat.SetVector("_LensCenter", center);
+            mat.SetFloat("_MeshRadius", radius);
+            // Bigger virtual screen so the footage still covers the ball near the rim.
+            mat.SetFloat("_ProjectionSize", radius * 2f * 1.3f);
+            mat.SetFloat("_InteriorDepth", radius * 0.6f);
+
+            // "More video" look preset (re-applied every time this menu runs).
+            mat.SetFloat("_MaskRadius", 1.1f);        // window covers most of the front
+            mat.SetFloat("_MaskSoftness", 0.5f);      // still a smooth gold -> video fade
+            mat.SetFloat("_FadeCurve", 0.6f);         // video takes over sooner
+            mat.SetFloat("_VideoSpread", 2.0f);       // footage glows through the gold fade zone
+            mat.SetFloat("_MaskFrontCutoff", 1.0f);   // full wrap: no hard cutoff from behind (user-tuned)
+            mat.SetFloat("_VideoIntensity", 3.0f);
+            mat.SetFloat("_Vignette", 0.35f);
+            mat.SetFloat("_MaskDebug", 0f);
+
+            // Window direction: toward a sibling front part / logo if there is one, else the camera.
+            Vector3 maskF;
+            var front = FindSibling(go.transform, "Front_Part_Logo", "Front_Part");
+            var cam = GetAimCamera();
+            if (front != null && front.GetComponent<Renderer>() != null)
+                maskF = (go.transform.InverseTransformPoint(front.GetComponent<Renderer>().bounds.center) - center).normalized;
+            else if (cam != null)
+                VideoRenderTextureBinder.ComputeLensBasis(go.transform, cam, out maskF, out _);
+            else
+                maskF = new Vector3(0, 0, -1);
+            Vector3 maskU = go.transform.InverseTransformDirection(Vector3.up).normalized;
+
+            mat.SetVector("_LensForward", maskF);
+            mat.SetVector("_LensUp", maskU);
+            if (isNew)
+            {
+                mat.SetVector("_MaskForward", maskF);
+                mat.SetVector("_MaskUp", maskU);
+            }
+            EditorUtility.SetDirty(mat);
+
+            Undo.RecordObject(mr, "Apply Video Lens 4");
+            AssignAll(mr, mat);
+
+            // ---- Extra parts: same lens + window, converted into each part's own object space ----
+            if (extras == null || extras.Count == 0)
+            {
+                var fp = FindSibling(go.transform, "Front_Part");
+                extras = new System.Collections.Generic.List<GameObject>();
+                if (fp != null && fp.GetComponent<MeshRenderer>() != null) extras.Add(fp.gameObject);
+            }
+            var extraRenderers = new System.Collections.Generic.List<Renderer>();
+            foreach (var e in extras)
+            {
+                var emr = e.GetComponent<MeshRenderer>();
+                var eOriginal = emr.sharedMaterial;
+                string ePath = ToolPaths.AssetPath("Materials", $"M_VideoLens4_{e.name}.mat");
+                var eMat = AssetDatabase.LoadAssetAtPath<Material>(ePath);
+                if (eMat == null) { eMat = new Material(shader); AssetDatabase.CreateAsset(eMat, ePath); }
+
+                // Each part keeps ITS OWN surface (its original material, or its previous v4 settings).
+                var surfaceSource = new Material(eOriginal != null && eOriginal != eMat ? eOriginal : eMat);
+                eMat.CopyPropertiesFromMaterial(mat);   // shared lens / window / video settings
+                CopySurface(surfaceSource, eMat);
+                Object.DestroyImmediate(surfaceSource);
+
+                float ratio = go.transform.lossyScale.x / Mathf.Max(1e-6f, e.transform.lossyScale.x);
+                eMat.SetVector("_LensCenter", e.transform.InverseTransformPoint(go.transform.TransformPoint(center)));
+                eMat.SetFloat("_MeshRadius", radius * ratio);
+                eMat.SetFloat("_ProjectionSize", mat.GetFloat("_ProjectionSize") * ratio);
+                eMat.SetFloat("_InteriorDepth", mat.GetFloat("_InteriorDepth") * ratio);
+                foreach (var prop in new[] { "_LensForward", "_LensUp", "_MaskForward", "_MaskUp" })
+                {
+                    Vector3 v = mat.GetVector(prop);
+                    eMat.SetVector(prop, e.transform.InverseTransformDirection(go.transform.TransformDirection(v)).normalized);
+                }
+                EditorUtility.SetDirty(eMat);
+
+                Undo.RecordObject(emr, "Apply Video Lens 4");
+                AssignAll(emr, eMat);
+                extraRenderers.Add(emr);
+            }
+
+            var vp = go.GetComponent<VideoPlayer>();
+            if (vp == null) vp = Undo.AddComponent<VideoPlayer>(go);
+            Undo.RecordObject(vp, "Apply Video Lens 4");
+            vp.playOnAwake = false;
+            vp.isLooping = true;
+            vp.renderMode = VideoRenderMode.RenderTexture;
+            vp.targetTexture = rt;
+            vp.audioOutputMode = VideoAudioOutputMode.None;
+            if (clip != null) vp.clip = clip;
+
+            var binder = go.GetComponent<VideoRenderTextureBinder>();
+            if (binder == null) binder = Undo.AddComponent<VideoRenderTextureBinder>(go);
+            binder.renderTexture = rt;
+            binder.targetRenderer = mr;
+            binder.aimLensAtCamera = true;
+            binder.muteAudio = true;
+            binder.extraRenderers = extraRenderers.ToArray();
+
+            EditorUtility.SetDirty(go);
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(go.scene);
+            AssetDatabase.SaveAssets();
+            Selection.activeObject = mat;
+            Debug.Log($"[VideoTextureTest] Video lens 4 applied to '{go.name}' + [{string.Join(", ", extras.Select(x => x.name))}]. Sphere center {center}, radius {radius:0.###}, " +
+                      $"window aimed {(front != null ? "at " + front.name : "at camera")}, surface from '{(original != null ? original.name : "defaults")}'{(originalIsOurs ? " (kept existing surface settings)" : "")}.", go);
+        }
+
+        // HDRP Lit-style surface properties shared with SG_VideoLens4 (same reference names).
+        static readonly string[] SurfaceFloats =
+        {
+            "_NormalScale", "_Metallic", "_Smoothness",
+            "_MetallicRemapMin", "_MetallicRemapMax", "_SmoothnessRemapMin", "_SmoothnessRemapMax",
+            "_AORemapMin", "_AORemapMax",
+        };
+
+        /// <summary>Copies a Lit-style surface (HDRP Lit, URP Lit/Standard names, or another v4 material) onto a v4 material.</summary>
+        static void CopySurface(Material src, Material dst)
+        {
+            if (src.HasProperty("_OutsideColor"))
+            {
+                // A version 3 material: flat "outside" surface (no textures).
+                dst.SetColor("_BaseColor", src.GetColor("_OutsideColor"));
+                dst.SetTexture("_BaseColorMap", null);
+                dst.SetTexture("_MaskMap", null);
+                dst.SetTexture("_NormalMap", null);
+                dst.SetFloat("_UseMaskMap", 0f);
+                if (src.HasProperty("_OutsideMetallic")) dst.SetFloat("_Metallic", src.GetFloat("_OutsideMetallic"));
+                if (src.HasProperty("_OutsideSmoothness")) dst.SetFloat("_Smoothness", src.GetFloat("_OutsideSmoothness"));
+                return;
+            }
+            string baseProp = src.HasProperty("_BaseColorMap") ? "_BaseColorMap" : src.HasProperty("_BaseMap") ? "_BaseMap" : src.HasProperty("_MainTex") ? "_MainTex" : null;
+            if (baseProp != null)
+            {
+                dst.SetTexture("_BaseColorMap", src.GetTexture(baseProp));
+                dst.SetTextureScale("_BaseColorMap", src.GetTextureScale(baseProp));
+                dst.SetTextureOffset("_BaseColorMap", src.GetTextureOffset(baseProp));
+            }
+            if (src.HasProperty("_BaseColor")) dst.SetColor("_BaseColor", src.GetColor("_BaseColor"));
+            else if (src.HasProperty("_Color")) dst.SetColor("_BaseColor", src.GetColor("_Color"));
+
+            var mask = src.HasProperty("_MaskMap") ? src.GetTexture("_MaskMap") : null;
+            dst.SetTexture("_MaskMap", mask);
+            dst.SetFloat("_UseMaskMap", mask != null ? 1f : 0f);   // like HDRP Lit: remapping only applies with a mask map
+
+            string nProp = src.HasProperty("_NormalMap") ? "_NormalMap" : src.HasProperty("_BumpMap") ? "_BumpMap" : null;
+            dst.SetTexture("_NormalMap", nProp != null ? src.GetTexture(nProp) : null);
+            if (!src.HasProperty("_NormalScale") && src.HasProperty("_BumpScale")) dst.SetFloat("_NormalScale", src.GetFloat("_BumpScale"));
+
+            foreach (var f in SurfaceFloats)
+                if (src.HasProperty(f)) dst.SetFloat(f, src.GetFloat(f));
         }
 
         static void AssignAll(MeshRenderer r, Material m)
@@ -338,7 +544,6 @@ namespace VideoTextureTest.EditorTools
         static VideoClip FindClip()
         {
             return Selection.objects.OfType<VideoClip>().FirstOrDefault()
-                   ?? AssetDatabase.LoadAssetAtPath<VideoClip>(DefaultClipPath)
                    ?? AssetDatabase.FindAssets("t:VideoClip").Select(g => AssetDatabase.LoadAssetAtPath<VideoClip>(AssetDatabase.GUIDToAssetPath(g))).FirstOrDefault();
         }
 
@@ -359,19 +564,18 @@ namespace VideoTextureTest.EditorTools
         [MenuItem("Tools/VideoTextureTest/Create Video Lens Demo")]
         public static void CreateDemo()
         {
-            var shader = AssetDatabase.LoadAssetAtPath<Shader>(ShaderPath);
+            var shader = ToolPaths.FindShader("SG_VideoLens");
             if (shader == null)
             {
-                EditorUtility.DisplayDialog("VideoTextureTest", $"Shader not found at {ShaderPath}. Let Unity finish importing and try again.", "OK");
+                EditorUtility.DisplayDialog("VideoTextureTest", "Couldn't find the SG_VideoLens shader graph in the project. Let Unity finish importing and try again.", "OK");
                 return;
             }
 
-            // Video clip: selected clip > reference clip > first clip in the project.
+            // Video clip: selected clip > first clip in the project.
             var clip = Selection.activeObject as VideoClip
-                       ?? AssetDatabase.LoadAssetAtPath<VideoClip>(DefaultClipPath)
                        ?? AssetDatabase.FindAssets("t:VideoClip").Select(g => AssetDatabase.LoadAssetAtPath<VideoClip>(AssetDatabase.GUIDToAssetPath(g))).FirstOrDefault();
 
-            if (!AssetDatabase.IsValidFolder(Root + "/Materials")) AssetDatabase.CreateFolder(Root, "Materials");
+            ToolPaths.EnsureFolder("Materials");
 
             // RenderTexture asset (sRGB, no mips, clamped).
             var rt = AssetDatabase.LoadAssetAtPath<RenderTexture>(RTPath);
