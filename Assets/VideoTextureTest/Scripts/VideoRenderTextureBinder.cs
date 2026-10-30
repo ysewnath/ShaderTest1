@@ -9,8 +9,9 @@ namespace VideoTextureTest
     /// (or any material with a texture property). Also drives the shader's "_Reveal"
     /// power-on animation and can keep the lens face aimed at a camera.
     ///
-    /// Timeline: turn off Auto Play and keyframe <see cref="reveal"/> with a regular
-    /// Animation Track (it previews while scrubbing in Edit mode).
+    /// Timeline: keyframe <see cref="reveal"/> with a regular Animation Track (it previews while
+    /// scrubbing in Edit mode), and drive the video with a "VideoTextureTest / Video Player Track"
+    /// bound to this object's VideoPlayer (it takes playback over from Auto Play automatically).
     /// </summary>
     [ExecuteAlways]
     [RequireComponent(typeof(VideoPlayer))]
@@ -61,6 +62,7 @@ namespace VideoTextureTest
         MaterialPropertyBlock _mpb;
         bool _ownsTexture;
         int _texId, _revealId;
+        bool _autoRevealPending;   // Auto Play set Reveal to 0 and is waiting to power on
         static readonly int LensForwardId = Shader.PropertyToID("_LensForward");
         static readonly int LensUpId = Shader.PropertyToID("_LensUp");
 
@@ -88,6 +90,7 @@ namespace VideoTextureTest
             EnsureRenderTexture();
 
             _player.playOnAwake = false;
+            if (_player.playbackSpeed <= 0f) _player.playbackSpeed = 1f;   // Edit-mode scrubbing freezes at speed 0
             if (muteAudio) _player.audioOutputMode = VideoAudioOutputMode.None;
             _player.renderMode = VideoRenderMode.RenderTexture;
             _player.targetTexture = renderTexture;
@@ -100,7 +103,7 @@ namespace VideoTextureTest
             }
 
             _player.prepareCompleted += OnPrepared;
-            if (animateReveal) reveal = 0f;
+            if (animateReveal) { reveal = 0f; _autoRevealPending = true; }
             Apply();
             _player.Prepare();
         }
@@ -167,6 +170,7 @@ namespace VideoTextureTest
 
         void OnPrepared(VideoPlayer vp)
         {
+            _autoRevealPending = false;
             vp.Play();
             if (animateReveal) StartCoroutine(RevealRoutine());
             else SetReveal(1f);
@@ -182,6 +186,24 @@ namespace VideoTextureTest
                 yield return null;
             }
             SetReveal(1f);
+        }
+
+        /// <summary>
+        /// Called by the VideoTextureTest Video Player Track: the Timeline now controls when the
+        /// video plays, so Auto Play must not start it. (Reveal is unaffected.)
+        /// </summary>
+        public void HandOffPlaybackToTimeline()
+        {
+            if (_player != null) _player.prepareCompleted -= OnPrepared;
+            if (_autoRevealPending)
+            {
+                // Auto Play had dimmed the lens to 0 waiting for its own power-on, which will now never run.
+                // Turn it back on (an Animation Track keying Reveal still overrides this every frame).
+                _autoRevealPending = false;
+                StopAllCoroutines();
+                reveal = 1f;
+                Apply();
+            }
         }
 
         /// <summary>Set the shader's power-on amount (0 = off, 1 = fully on).</summary>

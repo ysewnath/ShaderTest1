@@ -483,14 +483,12 @@ PlayableDirector:
   serializedVersion: 3
   m_PlayableAsset: {fileID: 11400000, guid: debc92637228abb4f8e63526f181a5a3, type: 2}
   m_InitialState: 1
-  m_WrapMode: 0
+  m_WrapMode: 1
   m_DirectorUpdateMode: 1
   m_InitialTime: 0
   m_SceneBindings:
-  - key: {fileID: 9094546269600071698, guid: debc92637228abb4f8e63526f181a5a3, type: 2}
-    value: {fileID: 0}
-  - key: {fileID: -7748343032440919324, guid: debc92637228abb4f8e63526f181a5a3, type: 2}
-    value: {fileID: 0}
+  - key: {fileID: 6197854458282628251, guid: debc92637228abb4f8e63526f181a5a3, type: 2}
+    value: {fileID: 1666293557}
   m_ExposedReferences:
     m_References: []
 --- !u!4 &622053932
@@ -796,7 +794,7 @@ VideoPlayer:
   m_RenderMode: 2
   m_AspectRatio: 2
   m_DataSource: 0
-  m_TimeUpdateMode: 2
+  m_TimeUpdateMode: 1
   m_PlaybackSpeed: 1
   m_AudioOutputMode: 0
   m_TargetAudioSources:
@@ -808,10 +806,10 @@ VideoPlayer:
   m_DirectAudioMutes: 00
   m_ControlledAudioTrackCount: 1
   m_PlayOnAwake: 0
-  m_SkipOnDrop: 1
+  m_SkipOnDrop: 0
   m_Looping: 1
   m_WaitForFirstFrame: 1
-  m_FrameReadyEventEnabled: 0
+  m_FrameReadyEventEnabled: 1
   m_VideoShaders: []
 --- !u!1001 &13932536222626681
 PrefabInstance:
