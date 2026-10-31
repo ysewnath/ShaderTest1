@@ -116,6 +116,7 @@ void JetEngine_float(
     float  HypnoWidth,     // blade width at the end of the ignition (0.46 = same as the start, up to ~0.85 = fat)
     float  SpinPhase,      // fan angle in turns, from JetEngineIgnition (+ = anti-clockwise on screen)
     float  SpinBlur,       // signed blades swept during the shutter (motion blur), from JetEngineIgnition
+    float  SmearPhase,     // angle (turns) of the smears / hot side; can spin faster than the blades (they don't strobe)
     float  Shimmer,        // heat shimmer amount (hub stays undistorted)
     float  Imperfection,   // uneven, streaky, flickering smear on the fast-spinning fan (reads as speed)
     float  SegmentCount,
@@ -199,7 +200,7 @@ void JetEngine_float(
     // blotchy circular smears ride around with the fan, one side runs hotter and the smears flicker.
     // These features are large and move with the blades, so they read as fast rotation (no strobing).
     float imp = saturate(Imperfection) * hypno;
-    float uRot = frac(aF + rF * twist * 0.15 + SpinPhase);              // angle that turns with the fan
+    float uRot = frac(aF + rF * twist * 0.15 + SmearPhase);             // angle that turns with the fan (full speed)
     float bladeId = floor(frac(bladeX / max(BladeCount, 1.0)) * max(BladeCount, 1.0));
     float bladeVar = VTTJet_Hash11(bladeId + 1.0 + Seed * 7.13);
     float smearA = VTTJet_NoiseP(float2(uRot * 7.0, rF * 16.0 + t * 0.6), 7.0);      // circular streaks
@@ -271,13 +272,13 @@ void JetEngine_half(
     half2 UV, half3 ViewDirTS, half Ignition,
     half4 ColdColor, half4 MidColor, half4 HotColor, half4 RingColor,
     half Intensity, half ExposureWeight, half BladeCount, half BladeTwist, half HypnoTwist, half HypnoWidth,
-    half SpinPhase, half SpinBlur, half Shimmer, half Imperfection,
+    half SpinPhase, half SpinBlur, half SmearPhase, half Shimmer, half Imperfection,
     half SegmentCount, half SpokeCount, half CageDarkness, half Depth, half Flicker, half Seed, half EffectTime,
     out half3 BaseColor, out half Metallic, out half Smoothness, out half3 Emission)
 {
     float3 b; float m; float s; float3 e;
     JetEngine_float(UV, ViewDirTS, Ignition, ColdColor, MidColor, HotColor, RingColor,
-        Intensity, ExposureWeight, BladeCount, BladeTwist, HypnoTwist, HypnoWidth, SpinPhase, SpinBlur, Shimmer, Imperfection,
+        Intensity, ExposureWeight, BladeCount, BladeTwist, HypnoTwist, HypnoWidth, SpinPhase, SpinBlur, SmearPhase, Shimmer, Imperfection,
         SegmentCount, SpokeCount, CageDarkness, Depth, Flicker, Seed, EffectTime, b, m, s, e);
     BaseColor = (half3)b; Metallic = (half)m; Smoothness = (half)s; Emission = (half3)e;
 }

@@ -86,6 +86,7 @@ Material:
     - _Seed: 0
     - _SegmentCount: 16
     - _Shimmer: 1
+    - _SmearPhase: 0
     - _SpinBlur: 0
     - _SpinPhase: 0
     - _SpinSpeed: 0.5

@@ -38,7 +38,7 @@ namespace VideoTextureTest
         [Tooltip("Turns per second at the start of the ignition (anti-clockwise, solid blades).")]
         [Min(0f)] public float startSpinSpeed = 0.3f;
         [Tooltip("Turns per second at full power (clockwise, spiral blades). On screen it is capped by Max Blades Per Frame so it never strobes.")]
-        [Min(0f)] public float endSpinSpeed = 1.5f;
+        [Min(0f)] public float endSpinSpeed = 3f;
         [Tooltip("Ignition range over which the fan slows, reverses and speeds up the other way.")]
         public Vector2 reverseRange = new Vector2(0.55f, 0.95f);
         [Tooltip("How quickly the fan follows the target speed (higher = less inertia).")]
@@ -46,7 +46,10 @@ namespace VideoTextureTest
         [Tooltip("Motion blur as a fraction of each displayed frame (0.5 = film-like 180° shutter). Uses the real frame time, so it's right at any frame rate.")]
         [Range(0f, 1f)] public float shutterAngle = 0.5f;
         [Tooltip("Most the fan may advance between displayed frames, in blades. Near 0.5 a fan looks frozen or runs backwards (wagon-wheel); keeping it below ~0.35 always reads as forward motion. The speed is capped to this on screen.")]
-        [Range(0.05f, 0.45f)] public float maxBladesPerFrame = 0.3f;
+        [Range(0.05f, 0.45f)] public float maxBladesPerFrame = 0.45f;
+        [Tooltip("Most the smears / hot side may move between frames, in smear cells (7 around the fan). They're coarse, so they can spin several times faster than the blades without strobing; this is what lets End Spin Speed read as fast.")]
+        [Range(0.05f, 0.45f)] public float maxSmearPerFrame = 0.4f;
+        const float SmearCells = 7f;   // matches the finest smear frequency in JetEngine.hlsl
         [Tooltip("Spin and shimmer while not in Play mode (keeps the Editor repainting while the engine is on).")]
         public bool animateInEditMode = true;
 
@@ -62,6 +65,7 @@ namespace VideoTextureTest
 
         static readonly int IgnitionId = Shader.PropertyToID("_Ignition");
         static readonly int SpinPhaseId = Shader.PropertyToID("_SpinPhase");
+        static readonly int SmearPhaseId = Shader.PropertyToID("_SmearPhase");
         static readonly int SpinBlurId = Shader.PropertyToID("_SpinBlur");
         static readonly int EffectTimeId = Shader.PropertyToID("_EffectTime");
         static readonly int BladeCountId = Shader.PropertyToID("_BladeCount");
@@ -70,7 +74,8 @@ namespace VideoTextureTest
         static readonly int HotId = Shader.PropertyToID("_HotColor");
 
         MaterialPropertyBlock _mpb;
-        float _spinPhase;     // turns (+ = anti-clockwise on screen when looking into the nozzle)
+        float _spinPhase;     // blade angle, turns (+ = anti-clockwise on screen when looking into the nozzle)
+        float _smearPhase;    // smear / hot-side angle, turns (runs at the true speed, up to its own strobe limit)
         float _spinVelocity;  // turns / s, signed, with inertia
         double _lastTime = -1;
         float _frameDt = 1f / 60f;   // smoothed time between Game-view renders
@@ -188,6 +193,7 @@ namespace VideoTextureTest
             float target = TargetSpinVelocity(Mathf.Clamp01(ignition));
             _spinVelocity = Mathf.Lerp(_spinVelocity, target, 1f - Mathf.Exp(-dt * spinResponse));
             _spinPhase = Mathf.Repeat(_spinPhase + DisplayVelocity() * dt, 1000f);
+            _smearPhase = Mathf.Repeat(_smearPhase + SmearVelocity() * dt, 1000f);
             Apply();
         }
 
@@ -199,6 +205,12 @@ namespace VideoTextureTest
         }
 
         /// <summary>Spin speed as shown on screen: capped so the fan never strobes (looks frozen / backwards).</summary>
+        public float SmearVelocity()
+        {
+            float cap = maxSmearPerFrame / (SmearCells * Mathf.Max(_frameDt, 1e-3f));          // turns per second
+            return Mathf.Clamp(_spinVelocity, -cap, cap);
+        }
+
         public float DisplayVelocity()
         {
             float cap = maxBladesPerFrame / (Blades() * Mathf.Max(_frameDt, 1e-3f));   // turns per second
@@ -227,7 +239,9 @@ namespace VideoTextureTest
                 r.GetPropertyBlock(_mpb);
                 _mpb.SetFloat(IgnitionId, ignition);
                 _mpb.SetFloat(SpinPhaseId, _spinPhase);
-                _mpb.SetFloat(SpinBlurId, DisplayVelocity() * Blades() * _frameDt * shutterAngle);   // signed blades swept while the shutter is open
+                _mpb.SetFloat(SmearPhaseId, _smearPhase);
+                // Blur follows the real speed, so the blades smear more the faster the fan goes (shader caps it).
+                _mpb.SetFloat(SpinBlurId, SmearVelocity() * Blades() * _frameDt * shutterAngle);
                 _mpb.SetFloat(EffectTimeId, effectTime);
                 r.SetPropertyBlock(_mpb);
             }

@@ -751,11 +751,12 @@ MonoBehaviour:
   holdTime: 2.5
   offTime: 1
   startSpinSpeed: 0.3
-  endSpinSpeed: 1.5
+  endSpinSpeed: 3
   reverseRange: {x: 0.55, y: 0.95}
   spinResponse: 3
   shutterAngle: 0.5
-  maxBladesPerFrame: 0.3
+  maxBladesPerFrame: 0.45
+  maxSmearPerFrame: 0.4
   animateInEditMode: 1
   engineRenderers:
   - {fileID: 1369208578}
@@ -1377,7 +1378,7 @@ Light:
   serializedVersion: 12
   m_Type: 2
   m_Color: {r: 0.08, g: 0.5, b: 1, a: 1}
-  m_Intensity: 3.9674642
+  m_Intensity: 3.9165294
   m_Range: 0.64
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
