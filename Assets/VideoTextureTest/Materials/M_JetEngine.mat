@@ -49,7 +49,7 @@ Material:
     - _AlphaDstBlend: 0
     - _AlphaSrcBlend: 1
     - _BladeCount: 30
-    - _BladeTwist: 1.5
+    - _BladeTwist: 0
     - _BlendMode: 0
     - _CageDarkness: 0.85
     - _ConservativeDepthOffsetEnable: 0
@@ -62,12 +62,16 @@ Material:
     - _DoubleSidedNormalMode: 2
     - _DstBlend: 0
     - _DstBlend2: 0
+    - _EffectTime: 0
     - _EnableBlendModePreserveSpecularLighting: 1
     - _EnableFogOnTransparent: 1
     - _ExcludeFromTUAndAA: 0
     - _ExposureWeight: 0
     - _Flicker: 0.35
+    - _HypnoTwist: 1.5
+    - _HypnoWidth: 0.72
     - _Ignition: 1
+    - _Imperfection: 1
     - _Intensity: 3
     - _MaterialID: 1
     - _MaterialTypeMask: 2
@@ -81,6 +85,9 @@ Material:
     - _RequireSplitLighting: 0
     - _Seed: 0
     - _SegmentCount: 16
+    - _Shimmer: 1
+    - _SpinBlur: 0
+    - _SpinPhase: 0
     - _SpinSpeed: 0.5
     - _SpokeCount: 12
     - _SrcBlend: 1
