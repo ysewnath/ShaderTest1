@@ -90,6 +90,16 @@ float VTTJet_Band(float r, float r0, float r1, float soft)
     return smoothstep(r0 - soft, r0 + soft, r) * (1.0 - smoothstep(r1 - soft, r1 + soft, r));
 }
 
+// Ray tracing shaders (DXR closest-hit passes) can't use derivatives; use a small fixed footprint there.
+float2 VTTJet_FWidth(float2 v)
+{
+#if defined(SHADER_STAGE_RAY_TRACING)
+    return float2(0.002, 0.002);
+#else
+    return fwidth(v);
+#endif
+}
+
 // Polar coords of a UV (0..1 across the disc): r 0..1 at the rim, a01 0..1 around.
 // dA = angular size of a pixel (in turns), computed without the atan2 seam.
 void VTTJet_Polar(float2 uv, out float r, out float a01, out float dA)
@@ -97,7 +107,7 @@ void VTTJet_Polar(float2 uv, out float r, out float a01, out float dA)
     float2 p = (uv - 0.5) * 2.0;
     r   = length(p);
     a01 = atan2(p.y, p.x) / VTTJET_TAU + 0.5;
-    dA  = length(fwidth(p)) / max(r, 1e-3) / VTTJET_TAU;
+    dA  = length(VTTJet_FWidth(p)) / max(r, 1e-3) / VTTJET_TAU;
 }
 
 void JetEngine_float(
@@ -163,7 +173,7 @@ void JetEngine_float(
     float2 uvHub  = UV + par * Depth * 0.80;
     float2 uvCage = UV + warp * 0.45;
 
-    float px = length(fwidth(UV)) * 2.0 + 1e-4;         // pixel size in r units
+    float px = length(VTTJet_FWidth(UV)) * 2.0 + 1e-4;         // pixel size in r units
 
     // ---- hub --------------------------------------------------------------
     float rH, aH, dAH;
