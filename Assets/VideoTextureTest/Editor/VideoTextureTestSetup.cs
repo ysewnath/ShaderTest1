@@ -509,6 +509,15 @@ namespace VideoTextureTest.EditorTools
             binder.muteAudio = true;
             binder.extraRenderers = new Renderer[0];
 
+            // Inside a prefab instance, make sure these count as overrides (otherwise the prefab's
+            // old values can come back, e.g. a binder still pointing at a shared render texture).
+            if (PrefabUtility.IsPartOfPrefabInstance(go))
+            {
+                PrefabUtility.RecordPrefabInstancePropertyModifications(mr);
+                PrefabUtility.RecordPrefabInstancePropertyModifications(vp);
+                PrefabUtility.RecordPrefabInstancePropertyModifications(binder);
+            }
+
             EditorUtility.SetDirty(go);
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(go.scene);
             AssetDatabase.SaveAssets();
@@ -591,10 +600,13 @@ namespace VideoTextureTest.EditorTools
             mat.SetFloat("_GlassSmoothness", 0.97f);
             mat.SetFloat("_GlassMetallic", 0f);
             mat.SetFloat("_KeepSurfaceInWindow", 0f);
-            mat.SetFloat("_WindowOpacity", 0.15f);
-            mat.SetFloat("_FootageOpacity", 0.9f);
-            mat.SetFloat("_EdgeOpacity", 0.12f);
+            mat.SetFloat("_WindowOpacity", 0.05f);
+            mat.SetFloat("_FootageOpacity", 0.55f);
+            mat.SetFloat("_EdgeOpacity", 0.04f);
             mat.SetFloat("_Grain", 0f);
+            mat.SetFloat("_Vignette", 0.1f);                                 // no dark band along the outline
+            mat.SetColor("_FresnelColor", new Color(0.08f, 0.1f, 0.13f, 1f)); // faint rim glow only
+            var bc = mat.GetColor("_BaseColor"); bc.a = Mathf.Min(bc.a, 0.04f); mat.SetColor("_BaseColor", bc);
         }
 
         /// <summary>Base color with the original material's real opacity (opaque materials count as fully opaque).</summary>

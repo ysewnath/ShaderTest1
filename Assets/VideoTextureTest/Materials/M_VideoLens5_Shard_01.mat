@@ -97,14 +97,14 @@ Material:
     - _DoubleSidedNormalMode: 2
     - _DstBlend: 10
     - _DstBlend2: 10
-    - _EdgeOpacity: 0.12
+    - _EdgeOpacity: 0.04
     - _EnableBlendModePreserveSpecularLighting: 1
     - _EnableFogOnTransparent: 1
     - _ExcludeFromTUAndAA: 0
     - _ExposureWeight: 0
     - _FadeCurve: 0.6
     - _Flicker: 0.04
-    - _FootageOpacity: 0.9
+    - _FootageOpacity: 0.55
     - _FresnelPower: 4
     - _GlassIOR: 1.45
     - _GlassMetallic: 0
@@ -115,9 +115,9 @@ Material:
     - _MappingMode: 1
     - _MaskDebug: 0
     - _MaskFrontCutoff: 1
-    - _MaskRadius: 1.15
+    - _MaskRadius: 2
     - _MaskRotation: 0
-    - _MaskSoftness: 0.35
+    - _MaskSoftness: 1
     - _MaterialID: 1
     - _MaterialTypeMask: 2
     - _MeshRadius: 0.49381036
@@ -134,7 +134,7 @@ Material:
     - _RefractionModel: 0
     - _RenderQueueType: 4
     - _RequireSplitLighting: 0
-    - _Reveal: 1
+    - _Reveal: 0
     - _RingWidth: 0
     - _Smoothness: 0.96
     - _SmoothnessRemapMax: 1
@@ -164,17 +164,17 @@ Material:
     - _UseShadowThreshold: 0
     - _VideoIntensity: 3
     - _VideoSpread: 2
-    - _Vignette: 0.35
-    - _WindowOpacity: 0.15
+    - _Vignette: 0.1
+    - _WindowOpacity: 0.05
     - _ZTestDepthEqualForOpaque: 4
     - _ZTestGBuffer: 4
     - _ZTestTransparent: 4
     - _ZWrite: 0
     m_Colors:
-    - _BaseColor: {r: 0.72, g: 0.86, b: 1, a: 0.1}
+    - _BaseColor: {r: 0.72, g: 0.86, b: 1, a: 0.04}
     - _DoubleSidedConstants: {r: 1, g: 1, b: 1, a: 0}
     - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
-    - _FresnelColor: {r: 0.3, g: 0.38, b: 0.5, a: 1}
+    - _FresnelColor: {r: 0.08, g: 0.1, b: 0.13, a: 1}
     - _GlassColor: {r: 0.85, g: 0.92, b: 1, a: 1}
     - _LensCenter: {r: -0.0034683198, g: 0.015253574, b: -0.00022717007, a: 0}
     - _LensForward: {r: -0.2243121, g: 0.4483282, b: 0.8652664, a: 0}

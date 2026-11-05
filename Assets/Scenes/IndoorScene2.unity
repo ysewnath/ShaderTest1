@@ -1571,6 +1571,14 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 630739883341485091, guid: 9b360815afa1a5942bc22fee7026c4ad, type: 3}
+      propertyPath: reveal
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 630739883341485091, guid: 9b360815afa1a5942bc22fee7026c4ad, type: 3}
+      propertyPath: renderTexture
+      value: 
+      objectReference: {fileID: 8400000, guid: dc83bbe901539c34494a5a600d739e85, type: 2}
+    - target: {fileID: 630739883341485091, guid: 9b360815afa1a5942bc22fee7026c4ad, type: 3}
       propertyPath: extraRenderers.Array.size
       value: 0
       objectReference: {fileID: 0}
