@@ -438,6 +438,177 @@ namespace VideoTextureTest.EditorTools
                       $"window aimed {(front != null ? "at " + front.name : "at camera")}, surface from '{(original != null ? original.name : "defaults")}'{(originalIsOurs ? " (kept existing surface settings)" : "")}.", go);
         }
 
+        // ------------------------------------------------------------------------------------
+        // Version 5: like v4, but on a TRANSPARENT surface (clear glass / crystal shards). The original
+        // material's opacity is kept outside the video window. Every selected object is set up on its
+        // OWN: its own lens, render texture (RT_VideoLens5_[name]) and VideoPlayer, so each piece can
+        // play a different video / offset (e.g. its own Timeline video track).
+        // ------------------------------------------------------------------------------------
+        [MenuItem("Tools/VideoTextureTest/Apply Video Lens To Selected Object 5")]
+        public static void ApplyToSelected5()
+        {
+            var targets = Selection.gameObjects.Where(g => g.GetComponent<MeshRenderer>() != null && g.GetComponent<MeshFilter>() != null).ToList();
+            if (targets.Count == 0)
+            {
+                EditorUtility.DisplayDialog("VideoTextureTest", "Select one or more GameObjects with a MeshFilter and MeshRenderer (e.g. glass shards). " +
+                    "Each one gets its own lens, render texture and VideoPlayer.", "OK");
+                return;
+            }
+            foreach (var t in targets) ApplyTo5(t);
+        }
+
+        /// <summary>Sets up one object: own lens (from its own mesh), own render texture, VideoPlayer and binder.</summary>
+        public static void ApplyTo5(GameObject go)
+        {
+            var shader = ToolPaths.FindShader("SG_VideoLens5");
+            if (shader == null)
+            {
+                EditorUtility.DisplayDialog("VideoTextureTest", "Couldn't find the SG_VideoLens5 shader graph in the project.", "OK");
+                return;
+            }
+            var clip = FindClip();
+            ToolPaths.EnsureFolder("Materials");
+            var rt = GetOrCreateRT5(go.name, clip);
+            var mr = go.GetComponent<MeshRenderer>();
+
+            // Lens = this object's own mesh: bounds center, radius = farthest vertex.
+            var mesh = go.GetComponent<MeshFilter>().sharedMesh;
+            var verts = mesh.vertices;
+            var bounds = mesh.bounds;
+            Vector3 center = bounds.center;
+            float radius = 0f;
+            foreach (var v in verts) radius = Mathf.Max(radius, (v - center).magnitude);
+            radius = Mathf.Max(radius, 1e-4f);
+
+            Vector3 lensF;
+            var cam = GetAimCamera();
+            if (cam != null) VideoRenderTextureBinder.ComputeLensBasis(go.transform, cam, out lensF, out _);
+            else lensF = new Vector3(0, 0, -1);
+            Vector3 lensU = go.transform.InverseTransformDirection(Vector3.up).normalized;
+
+            var mat = SetupLens5Material(go, shader, rt, center, radius, lensF, lensU);
+            Undo.RecordObject(mr, "Apply Video Lens 5");
+            AssignAll(mr, mat);
+
+            var vp = go.GetComponent<VideoPlayer>();
+            if (vp == null) vp = Undo.AddComponent<VideoPlayer>(go);
+            Undo.RecordObject(vp, "Apply Video Lens 5");
+            vp.playOnAwake = false;
+            vp.isLooping = true;
+            vp.renderMode = VideoRenderMode.RenderTexture;
+            vp.targetTexture = rt;
+            vp.audioOutputMode = VideoAudioOutputMode.None;
+            if (clip != null && vp.clip == null) vp.clip = clip;
+
+            var binder = go.GetComponent<VideoRenderTextureBinder>();
+            if (binder == null) binder = Undo.AddComponent<VideoRenderTextureBinder>(go);
+            Undo.RecordObject(binder, "Apply Video Lens 5");
+            binder.renderTexture = rt;
+            binder.targetRenderer = mr;
+            binder.aimLensAtCamera = true;
+            binder.muteAudio = true;
+            binder.extraRenderers = new Renderer[0];
+
+            EditorUtility.SetDirty(go);
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(go.scene);
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[VideoTextureTest] Video lens 5 (transparent) applied to '{go.name}': own render texture '{rt.name}', lens center {center}, radius {radius:0.###}.", go);
+        }
+
+        static RenderTexture GetOrCreateRT5(string objectName, VideoClip clip)
+        {
+            string path = ToolPaths.AssetPath("Materials", $"RT_VideoLens5_{objectName}.renderTexture");
+            var rt = AssetDatabase.LoadAssetAtPath<RenderTexture>(path);
+            if (rt != null) return rt;
+            int w = clip != null ? (int)clip.width : 1920;
+            int h = clip != null ? (int)clip.height : 1080;
+            rt = new RenderTexture(w, h, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB)
+            {
+                useMipMap = false, wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear
+            };
+            AssetDatabase.CreateAsset(rt, path);
+            return rt;
+        }
+
+        /// <summary>Creates / updates M_VideoLens5_[name] for one piece, keeping its original (possibly transparent) surface.</summary>
+        static Material SetupLens5Material(GameObject piece, Shader shader, RenderTexture rt, Vector3 center, float radius, Vector3 lensF, Vector3 lensU)
+        {
+            var r = piece.GetComponent<MeshRenderer>();
+            Material original = r.sharedMaterial;
+            string path = ToolPaths.AssetPath("Materials", $"M_VideoLens5_{piece.name}.mat");
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            bool isNew = mat == null;
+            if (isNew)
+            {
+                mat = new Material(shader);
+                AssetDatabase.CreateAsset(mat, path);
+            }
+            else if (mat.shader != shader) mat.shader = shader;
+
+            // A duplicated piece still points at its source's v5 material: start from a full copy of it.
+            bool originalIsV5 = original != null && original.shader != null && original.shader.name.Contains("SG_VideoLens5");
+            if (isNew && originalIsV5 && original != mat) mat.CopyPropertiesFromMaterial(original);
+
+            // Surface (incl. opacity) from the original material. Re-running keeps the v5 material's own surface.
+            if (original != null && original != mat && !originalIsV5)
+            {
+                CopySurface(original, mat);
+                mat.SetColor("_BaseColor", OriginalColorWithOpacity(original, mat.GetColor("_BaseColor")));
+            }
+
+            mat.SetTexture("_VideoTex", rt);
+            mat.SetFloat("_MappingMode", 1f);
+            mat.SetVector("_LensCenter", center);
+            mat.SetFloat("_MeshRadius", radius);
+            mat.SetFloat("_ProjectionSize", radius * 2f);
+            mat.SetFloat("_InteriorDepth", radius * 0.6f);
+            mat.SetVector("_LensForward", lensF);
+            mat.SetVector("_LensUp", lensU);
+            if (isNew && !originalIsV5)
+            {
+                // Window covers the whole piece; the surface still shows at the edges.
+                mat.SetVector("_MaskForward", lensF);
+                mat.SetVector("_MaskUp", lensU);
+                mat.SetFloat("_MaskRadius", 1.15f);
+                mat.SetFloat("_MaskSoftness", 0.35f);
+                mat.SetFloat("_FadeCurve", 0.6f);
+                mat.SetFloat("_VideoSpread", 2.0f);
+                mat.SetFloat("_MaskFrontCutoff", 1.0f);
+                mat.SetFloat("_VideoIntensity", 3.0f);
+                mat.SetFloat("_Vignette", 0.35f);
+                mat.SetFloat("_MaskDebug", 0f);
+                ApplyClearGlassPreset(mat);
+            }
+            UnityEngine.Rendering.HighDefinition.HDMaterial.ValidateMaterial(mat);   // transparent keywords / render queue
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
+        /// <summary>Clear, see-through glass: light tint inside the window, low opacity, video carries the image.</summary>
+        public static void ApplyClearGlassPreset(Material mat)
+        {
+            mat.SetColor("_GlassColor", new Color(0.85f, 0.92f, 1f, 1f));
+            mat.SetFloat("_GlassSmoothness", 0.97f);
+            mat.SetFloat("_GlassMetallic", 0f);
+            mat.SetFloat("_KeepSurfaceInWindow", 0f);
+            mat.SetFloat("_WindowOpacity", 0.15f);
+            mat.SetFloat("_FootageOpacity", 0.9f);
+            mat.SetFloat("_EdgeOpacity", 0.12f);
+            mat.SetFloat("_Grain", 0f);
+        }
+
+        /// <summary>Base color with the original material's real opacity (opaque materials count as fully opaque).</summary>
+        static Color OriginalColorWithOpacity(Material src, Color c)
+        {
+            bool transparent =
+                (src.HasProperty("_SurfaceType") && src.GetFloat("_SurfaceType") > 0.5f) ||   // HDRP
+                (src.HasProperty("_Surface") && src.GetFloat("_Surface") > 0.5f) ||           // URP
+                (src.HasProperty("_Mode") && src.GetFloat("_Mode") > 1.5f) ||                 // Built-in Standard (Fade / Transparent)
+                src.renderQueue >= 2501;
+            if (!transparent) c.a = 1f;
+            return c;
+        }
+
         // HDRP Lit-style surface properties shared with SG_VideoLens4 (same reference names).
         static readonly string[] SurfaceFloats =
         {
