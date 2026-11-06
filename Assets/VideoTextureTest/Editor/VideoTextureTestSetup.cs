@@ -206,6 +206,8 @@ namespace VideoTextureTest.EditorTools
             ToolPaths.EnsureFolder("Materials");
             var rt = GetOrCreateRT5(go.name, clip);
             var mr = go.GetComponent<MeshRenderer>();
+            // A transparent crystal must not cast a solid shadow (it would stay visible when Reveal fades it out).
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
             // Lens = this object's own mesh: bounds center, radius = farthest vertex.
             var mesh = go.GetComponent<MeshFilter>().sharedMesh;
@@ -324,6 +326,9 @@ namespace VideoTextureTest.EditorTools
                 mat.SetFloat("_MaskDebug", 0f);
                 ApplyClearGlassPreset(mat);
             }
+            // Reflections must fade with opacity, or the glass edges stay visible at any opacity / Reveal 0.
+            if (mat.HasProperty("_EnableBlendModePreserveSpecularLighting"))
+                mat.SetFloat("_EnableBlendModePreserveSpecularLighting", 0f);
             UnityEngine.Rendering.HighDefinition.HDMaterial.ValidateMaterial(mat);   // transparent keywords / render queue
             EditorUtility.SetDirty(mat);
             return mat;
@@ -343,6 +348,8 @@ namespace VideoTextureTest.EditorTools
             mat.SetFloat("_Vignette", 0.1f);                                 // no dark band along the outline
             mat.SetColor("_FresnelColor", new Color(0.08f, 0.1f, 0.13f, 1f)); // faint rim glow only
             var bc = mat.GetColor("_BaseColor"); bc.a = Mathf.Min(bc.a, 0.04f); mat.SetColor("_BaseColor", bc);
+            mat.SetFloat("_GlassVisibility", 0f);                            // only the footage shows, no glass edges
+            mat.SetFloat("_VideoExposure", 0f);                              // EV stops, lower if the footage is too bright
         }
 
         /// <summary>Base color with the original material's real opacity (opaque materials count as fully opaque).</summary>

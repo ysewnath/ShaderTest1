@@ -8,7 +8,9 @@
 // (Base Color alpha x Base Map alpha). Inside the window the opacity rises to
 // "Window Opacity", bright footage adds opacity ("Footage Opacity") so the video
 // reads clearly on clear glass, and glancing angles get more opaque ("Edge Opacity",
-// like real glass). Everything else (lens, window, surface maps) works as in v4.
+// like real glass). "Glass Visibility" scales all of the glass's own opacity / rim
+// (0 = only the footage shows), "Video Exposure" sets footage brightness in EV stops,
+// and Reveal 0 makes the whole object fully invisible. Everything else (lens, window, surface maps) works as in v4.
 // ----------------------------------------------------------------------------
 #ifndef VTT_VIDEO_LENS5_INCLUDED
 #define VTT_VIDEO_LENS5_INCLUDED
@@ -101,6 +103,8 @@ void VideoLens5_float(
     float  WindowOpacity,    // v5: opacity inside the video window (0 = keeps the surface's own opacity)
     float  FootageOpacity,   // v5: bright footage adds opacity so it reads on clear glass
     float  EdgeOpacity,      // v5: extra opacity at glancing angles (fresnel), like real glass
+    float  Exposure,         // v5: footage brightness in EV stops (0 = unchanged, -1 = half, +1 = double)
+    float  GlassVisibility,  // v5: how much of the glass itself shows (tint, edges, rim). 0 = only the footage
     out float3 Emission,
     out float  Fresnel,
     out float3 BaseColor,
@@ -216,7 +220,8 @@ void VideoLens5_float(
     float videoMask = saturate(Mask * max(VideoSpread, 0.0));
     footage *= vig * frameMask * frontMask * grazeFade * planeFade * flick * reveal * (1.0 - Fresnel * 0.4) * videoMask;
 
-    float3 rim = (FresnelColor.rgb * Fresnel * Mask + RingColor.rgb * ring) * saturate(Reveal);
+    float glassVis = saturate(GlassVisibility);
+    float3 rim = (FresnelColor.rgb * Fresnel * Mask + RingColor.rgb * ring) * saturate(Reveal) * glassVis;
 
     // ---- v4: original surface (HDRP Lit-style), tiled with the base map's tiling/offset ----
     float2 suv = UV * BaseColorMap.scaleTranslate.xy + BaseColorMap.scaleTranslate.zw;
@@ -238,8 +243,14 @@ void VideoLens5_float(
     float surfAlpha = saturate(baseS.a);
     float revealA   = saturate(Reveal);
     float winA      = lerp(surfAlpha, max(surfAlpha, saturate(WindowOpacity)), saturate(Mask) * revealA);
+    // Footage opacity is measured BEFORE exposure, so Exposure only changes brightness.
     float vidA      = saturate(dot(max(footage, 0.0), float3(0.2126, 0.7152, 0.0722)) * max(FootageOpacity, 0.0));
-    Alpha = saturate(max(winA, vidA) + Fresnel * max(EdgeOpacity, 0.0));
+    // The glass itself (its own opacity, the window tint, glancing-angle edges) scales with Glass Visibility.
+    float glassA    = saturate(winA + Fresnel * max(EdgeOpacity, 0.0)) * glassVis;
+    // Reveal 0 fades the whole crystal out (with Preserve Specular off, reflections fade with it).
+    Alpha = saturate(max(glassA, vidA)) * revealA;
+
+    footage *= exp2(Exposure);
 
     if (MaskDebug > 0.5)
     {
@@ -269,6 +280,7 @@ void VideoLens5_half(
     half MetallicRemapMin, half MetallicRemapMax, half SmoothnessRemapMin, half SmoothnessRemapMax,
     half AORemapMin, half AORemapMax, half KeepSurfaceInWindow,
     half FadeCurve, half VideoSpread, half MaskDebug, half WindowOpacity, half FootageOpacity, half EdgeOpacity,
+    half Exposure, half GlassVisibility,
     out half3 Emission, out half Fresnel, out half3 BaseColor, out half Smoothness, out half Metallic,
     out half Occlusion, out half3 NormalTS, out half Mask, out half Alpha)
 {
@@ -281,7 +293,7 @@ void VideoLens5_half(
         BaseColorMap, BaseColorTint, MaskMap, NormalMap, NormalScale, UseMaskMap, SurfaceMetallic, SurfaceSmoothness,
         MetallicRemapMin, MetallicRemapMax, SmoothnessRemapMin, SmoothnessRemapMax, AORemapMin, AORemapMax,
         KeepSurfaceInWindow, FadeCurve, VideoSpread, MaskDebug, WindowOpacity, FootageOpacity, EdgeOpacity,
-        e, f, bc, sm, mt, ao, n, mk, al);
+        Exposure, GlassVisibility, e, f, bc, sm, mt, ao, n, mk, al);
     Emission = (half3)e; Fresnel = (half)f; BaseColor = (half3)bc; Smoothness = (half)sm;
     Metallic = (half)mt; Occlusion = (half)ao; NormalTS = (half3)n; Mask = (half)mk; Alpha = (half)al;
 }

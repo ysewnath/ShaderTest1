@@ -82,7 +82,7 @@ Material:
     - _DstBlend: 10
     - _DstBlend2: 10
     - _EdgeOpacity: 0.35
-    - _EnableBlendModePreserveSpecularLighting: 1
+    - _EnableBlendModePreserveSpecularLighting: 0
     - _EnableFogOnTransparent: 1
     - _ExcludeFromTUAndAA: 0
     - _ExposureWeight: 0
@@ -93,6 +93,7 @@ Material:
     - _GlassIOR: 1.45
     - _GlassMetallic: 0
     - _GlassSmoothness: 0.96
+    - _GlassVisibility: 0
     - _Grain: 0.035
     - _InteriorDepth: 1.1409359
     - _KeepSurfaceInWindow: 0.25
@@ -146,6 +147,7 @@ Material:
     - _TransparentZWrite: 0
     - _UseMaskMap: 0
     - _UseShadowThreshold: 0
+    - _VideoExposure: 0
     - _VideoIntensity: 3
     - _VideoSpread: 2
     - _Vignette: 0.35
