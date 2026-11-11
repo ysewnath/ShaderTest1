@@ -316,8 +316,8 @@ namespace VideoTextureTest.EditorTools
                 // Window covers the whole piece; the surface still shows at the edges.
                 mat.SetVector("_MaskForward", lensF);
                 mat.SetVector("_MaskUp", lensU);
-                mat.SetFloat("_MaskRadius", 1.15f);
-                mat.SetFloat("_MaskSoftness", 0.35f);
+                mat.SetFloat("_MaskRadius", 1.05f);       // window = the piece's own outline (see FitMaskToMesh)
+                mat.SetFloat("_MaskSoftness", 0.6f);      // fades out toward the outside of the piece
                 mat.SetFloat("_FadeCurve", 0.6f);
                 mat.SetFloat("_VideoSpread", 2.0f);
                 mat.SetFloat("_MaskFrontCutoff", 1.0f);
@@ -325,6 +325,16 @@ namespace VideoTextureTest.EditorTools
                 mat.SetFloat("_Vignette", 0.35f);
                 mat.SetFloat("_MaskDebug", 0f);
                 ApplyClearGlassPreset(mat);
+            }
+            // Shape the window like the piece's outline as the camera sees it, so the video fades
+            // out along every edge (a circle only fits round pieces; shards are long and thin).
+            var mf = piece.GetComponent<MeshFilter>();
+            if (mf != null && mf.sharedMesh != null) FitMaskToMesh(mat, mf.sharedMesh, center, radius);
+            // Each piece gets its own uneven edge (kept once set, so it doesn't change on re-apply).
+            if (mat.HasProperty("_EdgeNoiseSeed") && mat.GetFloat("_EdgeNoiseSeed") == 0f)
+            {
+                int h = 17; foreach (char ch in piece.name) h = h * 31 + ch;
+                mat.SetFloat("_EdgeNoiseSeed", 1f + Mathf.Abs(h % 990) / 10f);
             }
             // Reflections must fade with opacity, or the glass edges stay visible at any opacity / Reveal 0.
             if (mat.HasProperty("_EnableBlendModePreserveSpecularLighting"))
@@ -335,6 +345,44 @@ namespace VideoTextureTest.EditorTools
         }
 
         /// <summary>Clear, see-through glass: light tint inside the window, low opacity, video carries the image.</summary>
+        /// <summary>
+        /// Fits the window mask to the mesh's outline in the mask plane: rotates the window to the
+        /// mesh's long axis and stretches it to its length / width (Mask Rotation + Mask Offset Stretch).
+        /// Mask Radius 1 then puts the window edge on the outline; Mask Softness sets the fade width.
+        /// </summary>
+        public static void FitMaskToMesh(Material mat, Mesh mesh, Vector3 center, float meshRadius)
+        {
+            Vector3 f = mat.GetVector("_MaskForward"), up = mat.GetVector("_MaskUp");
+            // Same frame as the shader: mz = -forward, mx = up x mz, my = mz x mx.
+            Vector3 mz = -(f.sqrMagnitude > 1e-8f ? f.normalized : Vector3.back);
+            if (Mathf.Abs(Vector3.Dot(up.normalized, mz)) > 0.99f) up = Vector3.right;
+            Vector3 mx = Vector3.Cross(up, mz).normalized, my = Vector3.Cross(mz, mx);
+            float inv = 1f / Mathf.Max(meshRadius, 1e-4f);
+            var pts = mesh.vertices.Select(v => { var d = v - center; return new Vector2(Vector3.Dot(d, mx), Vector3.Dot(d, my)) * inv; }).ToArray();
+            if (pts.Length == 0) return;
+
+            // Long axis = principal axis of the projected vertices.
+            Vector2 mean = Vector2.zero; foreach (var q in pts) mean += q; mean /= pts.Length;
+            float sxx = 0, syy = 0, sxy = 0;
+            foreach (var q in pts) { var d = q - mean; sxx += d.x * d.x; syy += d.y * d.y; sxy += d.x * d.y; }
+            float phi = 0.5f * Mathf.Atan2(2f * sxy, sxx - syy) * Mathf.Rad2Deg;   // long-axis angle from +x
+            float rot = 90f - phi;                                                  // shader rotation that maps it onto +y
+            float sa = Mathf.Sin(rot * Mathf.Deg2Rad), ca = Mathf.Cos(rot * Mathf.Deg2Rad);
+
+            // Extents in the rotated frame, centred on the outline's middle.
+            float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
+            foreach (var q in pts)
+            {
+                float x = ca * q.x - sa * q.y, y = sa * q.x + ca * q.y;
+                minX = Mathf.Min(minX, x); maxX = Mathf.Max(maxX, x); minY = Mathf.Min(minY, y); maxY = Mathf.Max(maxY, y);
+            }
+            var mid = new Vector2((minX + maxX) * 0.5f, (minY + maxY) * 0.5f);
+            var offset = new Vector2(ca * mid.x + sa * mid.y, -sa * mid.x + ca * mid.y);  // back to the unrotated frame
+            float hx = Mathf.Max((maxX - minX) * 0.5f, 1e-3f), hy = Mathf.Max((maxY - minY) * 0.5f, 1e-3f);
+            mat.SetFloat("_MaskRotation", rot);
+            mat.SetVector("_MaskOffsetStretch", new Vector4(offset.x, offset.y, hx, hy));
+        }
+
         public static void ApplyClearGlassPreset(Material mat)
         {
             mat.SetColor("_GlassColor", new Color(0.85f, 0.92f, 1f, 1f));
@@ -342,7 +390,8 @@ namespace VideoTextureTest.EditorTools
             mat.SetFloat("_GlassMetallic", 0f);
             mat.SetFloat("_KeepSurfaceInWindow", 0f);
             mat.SetFloat("_WindowOpacity", 0.05f);
-            mat.SetFloat("_FootageOpacity", 0.55f);
+            mat.SetFloat("_FootageOpacity", 1f);                             // solid picture, dark parts included
+            mat.SetFloat("_VideoFade", 0.5f);                                // soft fade toward the outside of the video
             mat.SetFloat("_EdgeOpacity", 0.04f);
             mat.SetFloat("_Grain", 0f);
             mat.SetFloat("_Vignette", 0.1f);                                 // no dark band along the outline

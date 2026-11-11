@@ -97,14 +97,17 @@ Material:
     - _DoubleSidedNormalMode: 2
     - _DstBlend: 10
     - _DstBlend2: 10
+    - _EdgeNoise: 0.35
+    - _EdgeNoiseScale: 2.5
+    - _EdgeNoiseSeed: 13.7
     - _EdgeOpacity: 0.04
     - _EnableBlendModePreserveSpecularLighting: 0
     - _EnableFogOnTransparent: 1
     - _ExcludeFromTUAndAA: 0
     - _ExposureWeight: 0
-    - _FadeCurve: 0.6
+    - _FadeCurve: 4
     - _Flicker: 0.04
-    - _FootageOpacity: 0.55
+    - _FootageOpacity: 1
     - _FresnelPower: 4
     - _GlassIOR: 1.45
     - _GlassMetallic: 0
@@ -115,10 +118,11 @@ Material:
     - _KeepSurfaceInWindow: 0
     - _MappingMode: 1
     - _MaskDebug: 0
-    - _MaskFrontCutoff: 1
-    - _MaskRadius: 2
-    - _MaskRotation: 0
-    - _MaskSoftness: 1
+    - _MaskFrontCutoff: 0
+    - _MaskRadius: 1.05
+    - _MaskRotation: 8.909042
+    - _MaskShape: 4
+    - _MaskSoftness: 0.395
     - _MaterialID: 1
     - _MaterialTypeMask: 2
     - _MeshRadius: 0.49381036
@@ -164,6 +168,7 @@ Material:
     - _UseMaskMap: 0
     - _UseShadowThreshold: 0
     - _VideoExposure: 0
+    - _VideoFade: 1
     - _VideoIntensity: 3
     - _VideoSpread: 2
     - _Vignette: 0.1
@@ -182,7 +187,7 @@ Material:
     - _LensForward: {r: -0.2243121, g: 0.4483282, b: 0.8652664, a: 0}
     - _LensUp: {r: 0.95069486, g: 0.29198113, b: 0.10452847, a: 0}
     - _MaskForward: {r: -0.19153209, g: -0.11605397, b: 0.9746009, a: 0}
-    - _MaskOffsetStretch: {r: 0, g: 0, b: 1, a: 1}
+    - _MaskOffsetStretch: {r: 0.0008872349, g: -0.006344764, b: 0.22244474, a: 0.97873324}
     - _MaskUp: {r: 0.1384107, g: 0.98484325, b: 0.10452848, a: 0}
     - _RingColor: {r: 1, g: 0.85, b: 0.55, a: 1}
     - _VideoScaleOffset: {r: 0.5625, g: 1, b: 0.21875, a: 0}

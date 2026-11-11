@@ -88,7 +88,7 @@ Material:
     - _ExposureWeight: 0
     - _FadeCurve: 0.6
     - _Flicker: 0.04
-    - _FootageOpacity: 1.5
+    - _FootageOpacity: 1
     - _FresnelPower: 4
     - _GlassIOR: 1.45
     - _GlassMetallic: 0
@@ -148,6 +148,7 @@ Material:
     - _UseMaskMap: 0
     - _UseShadowThreshold: 0
     - _VideoExposure: 0
+    - _VideoFade: 0.5
     - _VideoIntensity: 3
     - _VideoSpread: 2
     - _Vignette: 0.35

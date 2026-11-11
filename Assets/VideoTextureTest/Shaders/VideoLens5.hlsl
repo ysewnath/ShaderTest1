@@ -6,7 +6,8 @@
 // v5 = v4 on an HDRP *transparent* surface. The original material's opacity is kept:
 // outside the video window the mesh is as see-through as its source material
 // (Base Color alpha x Base Map alpha). Inside the window the opacity rises to
-// "Window Opacity", bright footage adds opacity ("Footage Opacity") so the video
+// "Window Opacity", the video area is solid ("Footage Opacity") and fades out toward
+// its outside ("Video Fade"), so the whole picture
 // reads clearly on clear glass, and glancing angles get more opaque ("Edge Opacity",
 // like real glass). "Glass Visibility" scales all of the glass's own opacity / rim
 // (0 = only the footage shows), "Video Exposure" sets footage brightness in EV stops,
@@ -20,6 +21,21 @@ float VTTv5_Hash12(float2 p)
     float3 p3 = frac(float3(p.xyx) * 0.1031);
     p3 += dot(p3, p3.yzx + 33.33);
     return frac((p3.x + p3.y) * p3.z);
+}
+
+// Smooth 2D value noise + 3-octave fbm (0..1), used to make the window edge uneven.
+float VTTv5_ValueNoise(float2 p)
+{
+    float2 i = floor(p), f = frac(p);
+    float2 u = f * f * (3.0 - 2.0 * f);
+    float a = VTTv5_Hash12(i), b = VTTv5_Hash12(i + float2(1, 0));
+    float c = VTTv5_Hash12(i + float2(0, 1)), d = VTTv5_Hash12(i + float2(1, 1));
+    return lerp(lerp(a, b, u.x), lerp(c, d, u.x), u.y);
+}
+
+float VTTv5_Fbm(float2 p)
+{
+    return VTTv5_ValueNoise(p) * 0.57 + VTTv5_ValueNoise(p * 2.13 + 17.1) * 0.29 + VTTv5_ValueNoise(p * 4.37 + 41.7) * 0.14;
 }
 
 float VTTv5_InverseExposure()
@@ -101,10 +117,15 @@ void VideoLens5_float(
     float  VideoSpread,      // >1 lets the footage glow through the gold fade zone
     float  MaskDebug,        // 1 = show the mask in red/green
     float  WindowOpacity,    // v5: opacity inside the video window (0 = keeps the surface's own opacity)
-    float  FootageOpacity,   // v5: bright footage adds opacity so it reads on clear glass
+    float  FootageOpacity,   // v5: opacity of the video area (1 = solid picture, dark parts included)
     float  EdgeOpacity,      // v5: extra opacity at glancing angles (fresnel), like real glass
     float  Exposure,         // v5: footage brightness in EV stops (0 = unchanged, -1 = half, +1 = double)
     float  GlassVisibility,  // v5: how much of the glass itself shows (tint, edges, rim). 0 = only the footage
+    float  VideoFade,        // v5: width of the opacity fade toward the outside of the video (0 = hard edge, 1 = very soft)
+    float  MaskShape,        // v5: window shape exponent. 2 = ellipse, 4+ = fuller rounded rectangle
+    float  EdgeNoise,        // v5: how uneven / ragged the window edge is (0 = clean)
+    float  EdgeNoiseScale,   // v5: size of the edge irregularities (higher = smaller, busier)
+    float  EdgeNoiseSeed,    // v5: per-object variation of the uneven edge
     out float3 Emission,
     out float  Fresnel,
     out float3 BaseColor,
@@ -202,8 +223,15 @@ void VideoLens5_float(
     float sa, ca;
     sincos(radians(MaskRotation), sa, ca);
     wxy = float2(ca * wxy.x - sa * wxy.y, sa * wxy.x + ca * wxy.y);
+    float2 noiseP = wxy;                                           // mesh-radius units: noise isn't stretched with the window
     wxy /= max(abs(MaskOffsetStretch.zw), 1e-3);
-    float d = length(wxy) / max(MaskRadius, 1e-3);                 // 1 = window edge
+    // Superellipse: 2 = ellipse, higher = fuller (more of the piece shows the video).
+    float shapeP = max(MaskShape, 1.0);
+    float2 aw = max(abs(wxy), 1e-5);
+    float d = pow(pow(aw.x, shapeP) + pow(aw.y, shapeP), 1.0 / shapeP) / max(MaskRadius, 1e-3);   // 1 = window edge
+    // Uneven edge: push the distance in / out with object-fixed noise (stays put as the camera moves).
+    float2 seedOff = float2(EdgeNoiseSeed * 7.31, EdgeNoiseSeed * 3.17);
+    d += (VTTv5_Fbm(noiseP * max(EdgeNoiseScale, 0.01) + seedOff) - 0.5) * 2.0 * max(EdgeNoise, 0.0) * 0.5;
 
     float soft = max(MaskSoftness, 1e-3);
     float window = 1.0 - smoothstep(1.0 - soft, 1.0, d);
@@ -243,8 +271,10 @@ void VideoLens5_float(
     float surfAlpha = saturate(baseS.a);
     float revealA   = saturate(Reveal);
     float winA      = lerp(surfAlpha, max(surfAlpha, saturate(WindowOpacity)), saturate(Mask) * revealA);
-    // Footage opacity is measured BEFORE exposure, so Exposure only changes brightness.
-    float vidA      = saturate(dot(max(footage, 0.0), float3(0.2126, 0.7152, 0.0722)) * max(FootageOpacity, 0.0));
+    // Video opacity comes from WHERE the video is (window mask + lens falloffs), not from how bright
+    // it is: the whole picture (dark parts too) is solid, and only its outside fades away.
+    float coverage  = saturate(Mask * max(VideoSpread, 0.0)) * frameMask * frontMask * grazeFade * planeFade;
+    float vidA      = smoothstep(0.0, max(VideoFade, 1e-3), coverage) * saturate(FootageOpacity);
     // The glass itself (its own opacity, the window tint, glancing-angle edges) scales with Glass Visibility.
     float glassA    = saturate(winA + Fresnel * max(EdgeOpacity, 0.0)) * glassVis;
     // Reveal 0 fades the whole crystal out (with Preserve Specular off, reflections fade with it).
@@ -280,7 +310,8 @@ void VideoLens5_half(
     half MetallicRemapMin, half MetallicRemapMax, half SmoothnessRemapMin, half SmoothnessRemapMax,
     half AORemapMin, half AORemapMax, half KeepSurfaceInWindow,
     half FadeCurve, half VideoSpread, half MaskDebug, half WindowOpacity, half FootageOpacity, half EdgeOpacity,
-    half Exposure, half GlassVisibility,
+    half Exposure, half GlassVisibility, half VideoFade,
+    half MaskShape, half EdgeNoise, half EdgeNoiseScale, half EdgeNoiseSeed,
     out half3 Emission, out half Fresnel, out half3 BaseColor, out half Smoothness, out half Metallic,
     out half Occlusion, out half3 NormalTS, out half Mask, out half Alpha)
 {
@@ -293,7 +324,7 @@ void VideoLens5_half(
         BaseColorMap, BaseColorTint, MaskMap, NormalMap, NormalScale, UseMaskMap, SurfaceMetallic, SurfaceSmoothness,
         MetallicRemapMin, MetallicRemapMax, SmoothnessRemapMin, SmoothnessRemapMax, AORemapMin, AORemapMax,
         KeepSurfaceInWindow, FadeCurve, VideoSpread, MaskDebug, WindowOpacity, FootageOpacity, EdgeOpacity,
-        Exposure, GlassVisibility, e, f, bc, sm, mt, ao, n, mk, al);
+        Exposure, GlassVisibility, VideoFade, MaskShape, EdgeNoise, EdgeNoiseScale, EdgeNoiseSeed, e, f, bc, sm, mt, ao, n, mk, al);
     Emission = (half3)e; Fresnel = (half)f; BaseColor = (half3)bc; Smoothness = (half)sm;
     Metallic = (half)mt; Occlusion = (half)ao; NormalTS = (half3)n; Mask = (half)mk; Alpha = (half)al;
 }
